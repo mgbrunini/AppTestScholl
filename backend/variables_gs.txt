@@ -1,0 +1,51 @@
+// ==========================================
+// ARCHIVO 1: variables.gs
+// ==========================================
+var SHEET_ID = '1fZ6W25Jju_tOs8DyEIqWHtFfRD52g9CR5-Qh-yKDAko'; 
+var USERS_SHEET_NAME = 'Usuarios';
+var COLEGIOS_SHEET_NAME = 'Colegios';
+var SESSION_TTL_SECONDS = 60 * 60 * 3; // 3 horas
+var COLEGIOS_SHEET_NAME = 'Colegios';
+var ADMIN_EMAIL = 'matiasgrande@abc.gob.ar'
+var LOGO_URL = 'https://i.imgur.com/jo8MN1G.png'
+
+// DBGeneral: mapeo de colegios -> año -> tipo -> ID
+var DBGeneral = {
+  "1": {
+    "2025": {
+      "principal": "1tJ8K-Me6Gy9Us4Esnwcu3SHsX97Y_FKhsxFmdKtNcDc",
+      "intensifica": "1lCwjZeJTeIMuMweB4wZsxsc-GE0CwAbp_o_ek4G3A3Q",
+      "previa": "1BedsQaunZePEegN6ytawg1Xh3Ws4gtu6DD5SL5X0opI",
+      "recursa": "19XwV-zfC5BFa-IkkH2fA_oxcDCAA2UwBN53gk1IJuh0",
+      "inasistencias": "1JrWdX4IryR77Q2gKqRi4bsCD0rli7-VQuQyP4we8TJI",
+      "datos":"1fq3jVf4_0SjB2vKeBq7WfXhunaUbKO_Snl8sAkQHGgM"
+    },
+    "2026": {
+      "principal": "id_del_documento_2026",
+      "intensifica": "id_del_documento_2026I",
+      "previa": "id_del_documento_2026P",
+      "recursa": "id_del_documento_2026R",
+      "datos":"id_del_documento_DATOS"
+    }
+  },
+  "2": {
+    "2025": {
+      "principal": "1FRjgumK4pzruVJlUawSd7fLtiDWDpvXwtYCzNlW486g",
+      "intensifica": "1UK6U6DeR8dkbsn-8AjibS97Y5EPox0z-Hrs67Gwx_1s",
+      "previa": "18yplwoFwnlPSi6Zw1_N_4HM6dPqB5kBZhGaFv3SIldY",
+      "recursa": "1Nk6hGfKRf7m6n5lvAxg3tr8eBxxOioRA0_Py_-c0Ly8",
+      "inasistencias": "1f6TQMjL7m5KnqeojolucQh9BVH6ftD2UWqrw2iQQkvo",
+      "datos":"14qSoaYwSfyLYxBeDA-lfNJwgsmAytvnXtGohHmGpFIY"
+    }
+  },
+  "3": {
+    "2025": {
+      "principal": "1p6jiElVRP4S7Xn6z23yEMUmLS4mOTGhA7_fUzDGbtlY",
+      "intensifica": "1pmkTd8D4ybs1d2AzyqlV2whgwDlLlft4BdZudgiNHZc",
+      "previa": "1XiJb4vKEULZ8RBYHqSGbmi325HZh6o9WQCJk7B8TGbc",
+      "recursa": "1ZNZ1WVfFLT0JUMIQY4GIw_6Lwm9uzXkJIVJH1GthGeo",
+      "inasistencias": "1uQyPJAn_CoNgcXrMD6umdqM-2XNnR08yLgDPjN4QHV4",
+      "datos":"18WJGNVgKZlYIOBWfYPtNZ_gTyYLyc5HVHgr2E_YDICM"
+    }
+  }
+};

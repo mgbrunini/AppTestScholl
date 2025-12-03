@@ -1,0 +1,333 @@
+Términos y Condiciones de EscuelApp
+
+Fecha de última actualización: 30/11/2025
+Nombre de la Aplicación: EscuelApp (en adelante, “la App”, “EscuelApp”, “Proveedor” o “Titular”)
+
+Advertencia legal: este documento es una propuesta contractualmente completa y detallada. No sustituye la asesoría jurídica profesional; se aconseja revisión y adaptación por un abogado con competencia en derecho tecnológico y protección de datos en Argentina.
+
+1. Partes, aceptación y alcance
+
+1.1. Estos Términos y Condiciones (“T&C”) regulan la utilización de EscuelApp por parte de las instituciones educativas clientes (“Institución”) y de sus usuarios autorizados: personal jerárquico, docentes, preceptores y padres/tutores (“Usuarios” o “Titulares de Datos”).
+1.2. El acceso, registro o uso de la App constituye aceptación expresa, íntegra y sin reservas de estos T&C. Si el Usuario no los acepta, deberá abstenerse de usar la App.
+
+2. Marco normativo aplicable
+
+2.1. El tratamiento de datos personales efectuado por EscuelApp se realiza en el marco de la Ley N° 25.326 de Protección de los Datos Personales y su reglamentación, y de las normas y decisiones administrativas y/o reglamentarias que la complementen. 
+Argentina.gob.ar
++1
+
+2.2. La autoridad de aplicación y control para la protección de datos personales en el ámbito nacional es la Agencia de Acceso a la Información Pública (AAIP), organismo donde pueden presentarse consultas o denuncias por incumplimientos. 
+Argentina.gob.ar
++1
+
+3. Funcionalidad y destinatarios
+
+3.1. Descripción: EscuelApp provee gestión interna escolar (boletines, asistencia, notificaciones, seguimiento académico y conducta, almacenamiento documental, estadísticas, informes, entre otras funciones).
+3.2. Destinatarios: la App está dirigida exclusivamente a uso institucional interno y a los Usuarios autorizados por la Institución. La Institución es responsable de la creación, asignación y revocación de cuentas y permisos.
+
+4. Registro, cuentas y responsabilidades de la Institución
+
+4.1. Cada cuenta es personal e intransferible. La Institución garantiza la veracidad de los datos facilitados y la autorización de las personas registradas.
+4.2. La Institución es responsable de: (i) verificar el consentimiento de los representantes legales cuando proceda; (ii) notificar inmediatamente al Proveedor sobre la revocación de autorizaciones o incidentes; (iii) custodiar credenciales y políticas de acceso.
+
+5. Principios aplicables al tratamiento
+
+5.1. Se aplican los principios de la Ley 25.326: finalidad, proporcionalidad (minimización), calidad de datos, consentimiento y seguridad. El tratamiento se limitará a datos estrictamente necesarios para los fines institucionales contratados. 
+Argentina.gob.ar
+
+6. Categorías de datos y finalidad
+
+6.1. Datos de registro y contacto (nombre, DNI, correo, teléfono, relación con la Institución).
+6.2. Datos académicos y administrativos (calificaciones, materias, asistencia, observaciones de conducta, informes).
+6.3. Datos técnicos y de uso (identificadores de dispositivo, IP, logs, metadata).
+6.4. Datos sensibles: EscuelApp no solicita ni procesa datos “sensibles” salvo que exista una base legal expresa o autorización del titular/representante legal; en caso de procesarse (por ejemplo, información de salud para asistencia educativa), se hará únicamente con fundamento legal expreso y medidas reforzadas de seguridad. 
+Estudio Nunes & Asociados
+
+7. Base legal del tratamiento y consentimiento
+
+7.1. La base legal principal es el consentimiento informado del titular o representante, y/o la relación contractual/organizativa entre la Institución y el Usuario cuando corresponda.
+7.2. Para menores, ver sección específica (Datos de menores y consentimiento parental).
+
+8. Derechos de los titulares (ARCO) y procedimiento
+
+8.1. Derechos: acceso, rectificación, actualización, supresión, oposición y revocación del consentimiento en los términos de la Ley N° 25.326. 
+Argentina.gob.ar
+
+8.2. Procedimiento para ejercer derechos ARCO:
+a) Presentación: el titular o su representante legal deberá enviar solicitud escrita al canal de soporte indicado por la Institución/Proveedor (correo electrónico certificado o formulario en la App).
+b) Documentación mínima: identificación (DNI o equivalente) y, si actúa representante, acreditación de representación.
+c) Plazos de respuesta: la Institución o el Proveedor evaluarán la solicitud y darán respuesta motivada dentro de los plazos previstos por la normativa vigente y conforme a lo pactado con la Institución; conforme a la práctica administrativa vigente, ciertas actuaciones de rectificación o supresión pueden atenderse en plazos razonables (por ejemplo plazos administrativos de 5 días hábiles para supresión/rectificación según criterios administrativos de la AAIP). 
+Argentina.gob.ar
+
+d) Recursos: si la respuesta es insuficiente, el titular podrá denunciar ante la AAIP o iniciar la acción judicial correspondiente (habeas data). 
+Argentina.gob.ar
+
+9. Retención, conservación y eliminación de datos
+
+9.1. Política general: Los datos se conservarán únicamente durante el tiempo necesario para cumplir la finalidad contractual o legal, salvo retenciones obligatorias por ley.
+9.2. Retenciones sugeridas (ejemplo orientativo — la Institución deberá establecer sus propios plazos conforme a normativa sectorial):
+
+Registros académicos y calificaciones: 10 años desde la última matrícula o conforme política institucional.
+
+Registros de asistencia: 5 años.
+
+Documentación administrativa vinculada a rendiciones o pagos: 7 años (por prescripciones fiscales).
+
+Registros de autenticación y logs técnicos: 1 a 3 años, salvo necesidad de investigación.
+9.3. Eliminación y supresión: al solicitar supresión, los datos serán borrados o anonimizados salvo obligación legal de conservación. Cuando sea técnicamente inviable la eliminación inmediata (copias de seguridad), los datos quedarán inaccesibles y se suprimirá en el siguiente ciclo de retención.
+
+Nota: los plazos son orientativos; la Institución debe revisar requisitos legales sectoriales y modificar los plazos aquí consignados.
+
+10. Medidas de seguridad técnicas y organizativas
+
+10.1. Principios: confidencialidad, integridad y disponibilidad. El Proveedor implementa medidas razonables y proporcionadas para proteger los datos:
+
+Control de acceso basado en roles (RBAC) y principio de menor privilegio.
+
+Autenticación segura; recomendación de MFA para cuentas administrativas.
+
+Cifrado en tránsito (TLS/HTTPS) y cifrado en reposo cuando aplique.
+
+Gestión de parches y actualizaciones de componentes.
+
+Registro de accesos y actividades administrativas (logs).
+
+Procedimientos documentados de backup y recuperación (copias periódicas, pruebas de restauración).
+
+Evaluaciones de seguridad periódicas (vulnerabilidades, pentests según riesgo).
+
+Políticas de gestión de incidentes y notificación (ver sección Incidentes).
+10.2. Limitaciones: las medidas son razonables pero no infalibles; el Proveedor no garantiza eliminación absoluta de riesgo de acceso no autorizado.
+
+11. Gestión de proveedores y encargados de tratamiento (Terceros)
+
+11.1. El Proveedor podrá contratar servicios de terceros (hosting, pasarelas de pago, notificaciones, analítica, CDN). En esos casos:
+a) Se celebrarán contratos de encargo de tratamiento que obliguen a los terceros a cumplir medidas de seguridad equivalentes y a procesar datos sólo según instrucciones documentadas.
+b) El Proveedor mantendrá un registro de subcontratistas y fines.
+11.2. Responsabilidad: el Proveedor exigirá cláusulas contractuales que limiten la subcontratación y garanticen el deber de notificar incidentes.
+
+12. Transferencias internacionales de datos
+
+12.1. Las transferencias fuera del país se realizarán únicamente cuando: (i) exista base legal; (ii) el proveedor extranjero ofrezca garantías adecuadas (acuerdos contractuales con obligaciones de seguridad); o (iii) exista autorización expresa del titular.
+12.2. La Institución/Proveedor informará a los titulares si sus datos serán transferidos y a qué jurisdicción, y qué medidas se adoptan.
+
+13. Incidentes de seguridad (brechas de datos)
+
+13.1. Definición: se considera incidente cualquier acceso, pérdida, divulgación o destrucción no autorizada de datos personales.
+13.2. Procedimiento interno: (i) detección; (ii) contención inmediata; (iii) evaluación del alcance y riesgo; (iv) remediación; (v) comunicaciones a las partes afectadas y a la Autoridad competente cuando corresponda.
+13.3. Notificación a titulares y AAIP: cuando la brecha implique riesgo para derechos y libertades de titulares, se notificará sin dilación indebida a la AAIP y se informará a los titulares afectados con información clara sobre la naturaleza del incidente y medidas adoptadas, conforme a la normativa y buenas prácticas. 
+Argentina.gob.ar
+
+14. Auditoría, cumplimiento y evaluación de impacto
+
+14.1. El Proveedor y la Institución acordarán auditorías razonables sobre el cumplimiento de las obligaciones de protección de datos.
+14.2. Para tratamientos de alto riesgo (por ejemplo, tratamiento sistemático de menores, perfiles automatizados relevantes), se realizará Evaluación de Impacto sobre la Protección de Datos (EIPD) previa y documentada.
+
+15. Datos de menores y consentimiento parental
+
+15.1. Tratamiento: el tratamiento de datos de menores de 16 años sólo se realizará con el consentimiento de su representante legal, salvo norma en contrario. El Proveedor exigirá a la Institución acreditar dicho consentimiento al momento del registro o de la solicitud correspondiente. 
+Argentina.gob.ar
+
+15.2. Transparencia: la información a padres/tutores será clara y accesible, con explicación de finalidades, plazo de retención y medios para ejercer derechos.
+
+16. Anonimización y uso agregado
+
+16.1. La App podrá procesar datos anonimizados o agregados para análisis, estadísticas y mejoras del servicio; tales datos no permitirán la identificación de titulares.
+
+17. Publicidad y comunicación comercial
+
+17.1. La versión gratuita puede mostrar publicidad. El Proveedor no responde por la veracidad o legalidad de anuncios de terceros. Los datos personales no serán vendidos; cualquier uso publicitario se realizará conforme al consentimiento y a la normativa aplicable.
+
+18. Propiedad intelectual
+
+18.1. El software, la interfaz, documentación y elementos de EscuelApp son propiedad del Titular o licenciantes; queda prohibida su reproducción o explotación no autorizada.
+
+19. Garantías, limitación de responsabilidad e indemnidad
+
+19.1. La App se presta “tal cual” y “según disponibilidad”. El Proveedor no garantiza funcionamiento ininterrumpido ni libre de errores. 
+Infoleg
+
+19.2. En la medida máxima permitida por la ley, el Proveedor no será responsable por daños indirectos, lucro cesante, pérdida de datos o perjuicios que surjan del uso de la App. La responsabilidad total por daños directos se limitará al monto abonado por la Institución al Proveedor en los últimos doce (12) meses o a la suma menor que la ley permita. 
+Argentina.gob.ar
+
+19.3. Indemnización: el Usuario o la Institución indemnizarán al Proveedor frente a reclamos por uso indebido, incumplimiento contractual o vulneración de derechos de terceros.
+
+20. Fuerza mayor
+
+20.1. Ninguna de las partes será responsable por incumplimientos debido a caso fortuito o fuerza mayor (fallas de terceros, desastres naturales, actos de autoridad).
+
+21. Modificaciones, terminación y continuidad
+
+21.1. El Proveedor puede modificar la App o los T&C previo aviso. El uso continuado tras la modificación implica aceptación.
+21.2. El Proveedor puede suspender o terminar servicios por incumplimiento; la terminación no exime de obligaciones ya devengadas.
+
+22. Comunicaciones y contacto
+
+22.1. Notificaciones oficiales se realizarán por correo electrónico o notificaciones en la App. Para consultas y solicitudes ARCO, el canal oficial es: soporte@escuelapp.example
+ (reemplazar por correo real).
+22.2. Responsable de Protección de Datos (DPO) o contacto: Nombre / correo / teléfono (la Institución o el Proveedor completarán según corresponda).
+
+23. Cláusulas contractuales adicionales entre Institución y Proveedor
+
+23.1. SLA y disponibilidad: se podrá pactar un Acuerdo de Nivel de Servicio (SLA) en contratos separados.
+23.2. Derechos y obligaciones en materia de protección de datos: contratarán un “Acuerdo de Encargo de Tratamiento” donde se detallarán las instrucciones, medidas de seguridad y subcontrataciones permitidas.
+
+24. Legislación aplicable y jurisdicción
+
+24.1. Ley aplicable: leyes de la República Argentina.
+24.2. Jurisdicción: tribunales competentes del domicilio del Proveedor o los que las partes acuerden, en la medida que la ley lo permita.
+
+Anexos: Cláusulas y documentos operativos (listas para usar)
+Anexo A — Política de Retención (modelo)
+
+(Se incluye en el documento de la Institución con plazos definitivos; aquí un modelo resumido y aplicable)
+
+Registros académicos: 10 años.
+
+Asistencias: 5 años.
+
+Informes de conducta: 5 años (salvo que afecten a procesos disciplinarios en curso).
+
+Registros financieros: 7 años.
+
+Logs de acceso: 1 año.
+
+Copias de seguridad: 6 meses en ciclo activo; almacenadas hasta que se cumpla la retención aplicable.
+
+La Institución podrá extender o acotar estos plazos por requerimiento legal vigente o normativa sectorial.
+
+Anexo B — Clausulas contractuales para Encargados/Subcontratistas (modelo)
+
+(Resumen de obligaciones mínimas que deben firmar los encargados)
+
+Procesar datos sólo conforme a instrucciones documentadas.
+
+No subcontratar sin consentimiento.
+
+Adoptar medidas de seguridad equivalentes.
+
+Notificar incidentes en tiempo máximo de 72 horas.
+
+Facilitar auditorías y pruebas de cumplimiento.
+
+Anexo C — Plantilla de Solicitud ARCO (modelo para la App)
+
+Datos del solicitante: nombre, DNI, correo, teléfono.
+
+Relación con la Institución.
+
+Petición concreta: acceso/rectificación/supresión/otros.
+
+Documentación adjunta: DNI y acreditación de representación (si corresponde).
+
+Política de Privacidad de EscuelApp (texto completo para publicación)
+
+1. Identificación del responsable
+EscuelApp — Titular/Desarrollador: [Razon social / Nombre] — CUIT: [●] — Domicilio: [●] — Correo de contacto: soporte@escuelapp.example
+.
+
+2. Finalidad del tratamiento
+Tratamos datos personales para: (i) gestionar la relación institucional y operativa entre la Institución y sus actores; (ii) administrar matrículas, asistencia, calificaciones y comunicaciones; (iii) generar reportes y estadísticas internas; (iv) enviar notificaciones y comunicaciones académicas; (v) cumplir obligaciones legales y fiscales. Cualquier otro tratamiento será informado y requerirá consentimiento informado.
+
+3. Datos que se recaban
+Recopilamos datos de identificación y contacto, académicos, de asistencia, de conducta y técnicos. No recabamos datos sensibles salvo autorización o base legal expresa.
+
+4. Base legal del tratamiento
+Tratamos datos con fundamento en: (i) consentimiento del titular o representante; (ii) ejecución de obligaciones contractuales o institucionales; (iii) cumplimiento de obligaciones legales; (iv) interés legítimo limitado y proporcionado cuando aplique.
+
+5. Transferencias y encargados de tratamiento
+Podemos transferir datos a proveedores encargados de prestación tecnológica y servicios relacionados. Antes de cualquier transferencia, se firmarán contratos de encargo de tratamiento que incorporen obligaciones de seguridad y confidencialidad.
+
+6. Transferencias internacionales
+Las transferencias fuera de Argentina se realizarán sólo con garantías contractuales y/o consentimiento expreso. Informaremos a los titulares sobre la jurisdicción de destino.
+
+7. Plazos de conservación
+Los datos se conservarán mientras exista la relación institucional y por los plazos legales aplicables. Cumplida la finalidad y vencidos los plazos, procederemos a la supresión o anonimización.
+
+8. Derechos de los titulares (ARCO)
+Los titulares pueden ejercer los derechos de acceso, rectificación, supresión, oposición y revocación del consentimiento mediante el formulario/ canal: soporte@escuelapp.example
+ o formulario en la App. Se requiere identificación y, si corresponde, documentación que acredite representación. Los plazos de respuesta se ajustarán a la normativa vigente. 
+Argentina.gob.ar
+
+9. Seguridad
+Aplicamos medidas técnicas y organizativas razonables (cifrado, control de accesos, backups, registros de actividad, gestión de vulnerabilidades). No obstante, no podemos garantizar la invulnerabilidad absoluta.
+
+10. Menores
+El tratamiento de datos de menores de 16 años requiere consentimiento de su representante legal. La Institución garantizará la obtención de dicho consentimiento. 
+Argentina.gob.ar
+
+11. Ejercicio de derechos y reclamos
+Para ejercer derechos o presentar reclamos: soporte@escuelapp.example
+. Si la respuesta fuera insatisfactoria, el titular puede reclamar ante la AAIP. 
+Argentina.gob.ar
+
+12. Modificaciones a la política
+Podremos actualizar la Política. Las modificaciones serán publicadas en la App y/o comunicadas por correo; el uso continuado implicará aceptación.
+
+Consentimiento Informado (modelo listo para firmar o aceptar en la App)
+
+CONSENTIMIENTO INFORMADO PARA EL TRATAMIENTO DE DATOS PERSONALES
+Yo, [Nombre y Apellido del Titular o Representante], DNI [●], en mi carácter de [Titular / Padre / Madre / Tutor], doy mi consentimiento libre, específico, informado y por escrito para que EscuelApp y la [Nombre de la Institución] recolecten, registren, almacenen y traten mis datos personales y/o los de mi representado para las finalidades siguientes: gestión académica, registros de asistencia, comunicaciones institucionales, generación de boletines y reportes, almacenamiento de documentación requerida por la Institución y cumplimiento de obligaciones legales.
+
+Alcance y finalidades específicas:
+
+Gestión administrativa, académica y disciplinaria dentro del ámbito escolar.
+
+Envío de comunicaciones y notificaciones relativas a actividades escolares, emergencias y novedades.
+
+Elaboración de estadísticas internas y reportes agregados.
+
+Datos tratados: nombre, documento, fecha de nacimiento, datos de contacto, calificaciones, asistencia, observaciones de conducta, y otros datos académicos y administrativos necesarios. No se solicitarán datos sensibles salvo autorización específica y por razones justificadas. 
+Estudio Nunes & Asociados
+
+Plazo de conservación: los datos serán conservados mientras se mantenga la relación con la Institución y por los plazos legales o institucionales aplicables; cumplida la finalidad, se procederá a su supresión o anonimización. (Consultar Política de Retención).
+
+Transferencias: autorizo la transferencia a proveedores que prestan servicios técnicos a EscuelApp (hosting, mensajería, backups) con las salvaguardias contractuales necesarias y, en su caso, a jurisdicciones extranjeras cuando ello sea necesario para la prestación del servicio.
+
+Derechos: conozco que puedo ejercer mis derechos de acceso, rectificación, actualización y supresión (ARCO) y revocar este consentimiento en cualquier momento comunicándome al correo soporte@escuelapp.example
+; asimismo conozco la vía de reclamo ante la AAIP. 
+Argentina.gob.ar
++1
+
+Incidentes: en caso de brecha de seguridad que implique riesgo para mis derechos, seré notificado conforme a la normativa y a los procedimientos institucionales. 
+Argentina.gob.ar
+
+Fecha: _______ / _______ / _______
+Firma (o aceptación electrónica): ____________________________
+Documento de identidad: ____________________________
+
+Textos operativos (listos para integrar en la App)
+
+Banner de consentimiento breve en registro: “Acepto que EscuelApp trate mis datos personales para la gestión escolar descrita en la Política de Privacidad (enlace).”
+
+Formulario ARCO preconfigurado con campos y checklist para adjuntar documentación.
+
+Checkboxes para consentimiento específico cuando se soliciten datos sensibles o transferencias internacionales.
+
+Observaciones finales y recomendaciones prácticas
+
+Revisión legal: pedir adaptación por abogado especializado en protección de datos y derecho educativo en Argentina.
+
+Registro contractual: firmar Acuerdo de Encargo de Tratamiento (Data Processing Agreement) con cada proveedor tercero.
+
+EIPD: realizar Evaluación de Impacto para tratamientos amplios o automatizados, sobre todo si se tratan datos de menores.
+
+Pruebas y ejercicios: simular respuesta a incidentes (test de incident response) y tests de restauración de backups periódicos.
+
+Política interna de privacidad: capacitar al personal de la Institución en manejo seguro de datos y en procedimiento ARCO.
+
+Fuentes y normativa citada (selección)
+
+Ley N° 25.326 — Protección de los Datos Personales (texto consolidado). 
+Argentina.gob.ar
++1
+
+Decreto Reglamentario 1558/2001 de la Ley 25.326. 
+Argentina.gob.ar
+
+Agencia de Acceso a la Información Pública (AAIP) — Protección de Datos Personales y derechos ARCO. 
+Argentina.gob.ar
++1
+
+Sitio oficial AAIP — políticas y guías sobre derechos y procedimientos. 
+Argentina.gob.ar

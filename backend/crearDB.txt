@@ -1,0 +1,296 @@
+// ==========================================
+// MÉTODO MANUAL: crearDB()
+// ==========================================
+// IMPORTANTE: Este método se ejecuta MANUALMENTE desde el editor de Apps Script
+// cuando necesites crear o actualizar la estructura de la base de datos.
+// 
+// Para ejecutar:
+// 1. Abre el editor de Apps Script
+// 2. Selecciona la función "crearDB" en el menú desplegable
+// 3. Haz clic en el botón "Ejecutar"
+//
+// Este método sirve como REFERENCIA COMPLETA de toda la estructura de la DB
+// para cuando migremos a una base de datos real (MySQL, PostgreSQL, etc.)
+// ==========================================
+
+function crearDB() {
+  try {
+    var ss;
+    if (SHEET_ID === 'REPLACE_WITH_YOUR_SPREADSHEET_ID') {
+      ss = SpreadsheetApp.getActiveSpreadsheet();
+    } else {
+      ss = SpreadsheetApp.openById(SHEET_ID);
+    }
+    
+    if (!ss) {
+      Logger.log('ERROR: No se pudo abrir el spreadsheet');
+      return { ok: false, msg: 'No se pudo abrir el spreadsheet' };
+    }
+    
+    var creadas = [];
+    var existentes = [];
+    
+    // ==========================================
+    // TABLA: Usuarios (Alumnos)
+    // ==========================================
+    // Almacena todos los usuarios del sistema (padres, docentes, directivos, etc.)
+    var usuariosSheet = ss.getSheetByName('Usuarios');
+    if (!usuariosSheet) {
+      usuariosSheet = ss.insertSheet('Usuarios');
+      usuariosSheet.appendRow([
+        'pk_usuario',           // DNI - Primary Key
+        'nombre',               // VARCHAR(100)
+        'apellido',             // VARCHAR(100)
+        'email',                // VARCHAR(255) UNIQUE
+        'fecha_nacimiento',     // DATE
+        'domicilio',            // VARCHAR(255)
+        'partido',              // VARCHAR(100)
+        'localidad',            // VARCHAR(100)
+        'rol',                  // ENUM('Padre','Docente','Directivo','Preceptor','Admin')
+        'password',             // VARCHAR(255) - Hasheada con salt
+        'fk_colegio',           // VARCHAR(50) - Foreign Key (legacy, ahora se usa Personal_Colegios)
+        'activo'                // BOOLEAN
+      ]);
+      creadas.push('Usuarios');
+    } else {
+      existentes.push('Usuarios');
+    }
+    
+    // ==========================================
+    // TABLA: Colegios
+    // ==========================================
+    // Almacena información de las instituciones educativas
+    var colegiosSheet = ss.getSheetByName('Colegios');
+    if (!colegiosSheet) {
+      colegiosSheet = ss.insertSheet('Colegios');
+      colegiosSheet.appendRow([
+        'pk_colegio',           // INT AUTO_INCREMENT - Primary Key
+        'tipo',                 // ENUM('Secundaria','Secundaria Agraria')
+        'nombre',               // VARCHAR(255)
+        'direccion',            // VARCHAR(255)
+        'partido',              // VARCHAR(100)
+        'localidad',            // VARCHAR(100)
+        'cue',                  // VARCHAR(20) UNIQUE
+        'telefono',             // VARCHAR(20)
+        'email',                // VARCHAR(255)
+        'activo',               // BOOLEAN
+        'approval_token'        // VARCHAR(255) - Token de aprobación
+      ]);
+      creadas.push('Colegios');
+    } else {
+      existentes.push('Colegios');
+    }
+    
+    // ==========================================
+    // TABLA: Personal_Colegios
+    // ==========================================
+    // Relación muchos a muchos entre usuarios y colegios con roles específicos
+    var personalSheet = ss.getSheetByName('Personal_Colegios');
+    if (!personalSheet) {
+      personalSheet = ss.insertSheet('Personal_Colegios');
+      personalSheet.appendRow([
+        'pk_personal_colegio',  // INT AUTO_INCREMENT - Primary Key
+        'fk_usuario',           // VARCHAR(20) - Foreign Key -> Usuarios.pk_usuario (DNI)
+        'fk_colegio',           // INT - Foreign Key -> Colegios.pk_colegio
+        'roles',                // VARCHAR(255) - Ej: "Docente,Preceptor"
+        'activo'                // BOOLEAN
+      ]);
+      creadas.push('Personal_Colegios');
+    } else {
+      existentes.push('Personal_Colegios');
+    }
+    
+    // ==========================================
+    // TABLA: Materias
+    // ==========================================
+    // Almacena las materias/asignaturas de cada colegio
+    var materiasSheet = ss.getSheetByName('Materias');
+    if (!materiasSheet) {
+      materiasSheet = ss.insertSheet('Materias');
+      materiasSheet.appendRow([
+        'pk_materia',                   // VARCHAR(50) - Primary Key (generado)
+        'fk_colegio',                   // INT - Foreign Key -> Colegios.pk_colegio
+        'nombre',                       // VARCHAR(100)
+        'curso',                        // VARCHAR(20) - Ej: "1ro A", "2do B"
+        'fk_docente',                   // VARCHAR(20) - Foreign Key -> Usuarios.pk_usuario (DNI)
+        'horario',                      // TEXT - JSON con horarios
+        'activo',                       // BOOLEAN
+        'tipo_asignacion',              // ENUM('Titular','Suplente','Temporal')
+        'fecha_inicio',                 // DATE - Para asignaciones temporales
+        'fecha_fin',                    // DATE - Para asignaciones temporales
+        'fk_docente_titular_dni',       // VARCHAR(20) - DNI del titular (si es suplencia)
+        'fk_docente_titular_nombre'     // VARCHAR(200) - Nombre del titular (denormalizado)
+      ]);
+      creadas.push('Materias');
+    } else {
+      existentes.push('Materias');
+    }
+    
+    // ==========================================
+    // TABLA: Alumnos
+    // ==========================================
+    // Almacena información específica de los alumnos
+    // ESTRUCTURA ACTUALIZADA: 10 columnas (A-J)
+    var alumnosSheet = ss.getSheetByName('Alumnos');
+    if (!alumnosSheet) {
+      alumnosSheet = ss.insertSheet('Alumnos');
+      alumnosSheet.appendRow([
+        'pk_alumno',            // A: VARCHAR(20) - Primary Key (DNI del alumno)
+        'dni',                  // B: VARCHAR(20) - DNI (duplicado para consistencia)
+        'nombre',               // C: VARCHAR(100)
+        'apellido',             // D: VARCHAR(100)
+        'fecha_nacimiento',     // E: DATE (solo fecha, sin hora)
+        'fk_colegio',           // F: INT - Foreign Key -> Colegios.pk_colegio
+        'curso',                // G: VARCHAR(20) - Ej: "PRIMERO", "SEGUNDO", "QUINTO"
+        'division',             // H: VARCHAR(10) - Ej: "A", "B"
+        'condicion',            // I: ENUM('CURSA','RECURSA','INTENSIFICA') - Default: 'CURSA'
+        'activo'                // J: BOOLEAN - Default: TRUE (FALSE = alumno eliminado)
+      ]);
+      creadas.push('Alumnos');
+    } else {
+      existentes.push('Alumnos');
+    }
+    
+    // ==========================================
+    // TABLA: Inscripciones
+    // ==========================================
+    // Relación muchos a muchos entre alumnos y materias
+    // Permite que un alumno curse, recurse o intensifique materias específicas
+    // ACTUALIZADA: Incluye fk_colegio y year para mejor organización y trazabilidad
+    var inscripcionesSheet = ss.getSheetByName('Inscripciones');
+    if (!inscripcionesSheet) {
+      inscripcionesSheet = ss.insertSheet('Inscripciones');
+      inscripcionesSheet.appendRow([
+        'pk_inscripcion',       // A: VARCHAR(50) - Primary Key (UUID)
+        'fk_alumno',            // B: VARCHAR(20) - Foreign Key -> Alumnos.pk_alumno (DNI)
+        'fk_materia',           // C: VARCHAR(50) - Foreign Key -> Materias.pk_materia
+        'fk_colegio',           // D: INT - Foreign Key -> Colegios.pk_colegio
+        'year',                 // E: INT - Año lectivo (ej: 2024, 2025)
+        'condicion',            // F: ENUM('CURSA','RECURSA','INTENSIFICA')
+        'fecha_inscripcion',    // G: DATETIME
+        'activo'                // H: BOOLEAN
+      ]);
+      creadas.push('Inscripciones');
+    } else {
+      existentes.push('Inscripciones');
+    }
+    
+    // ==========================================
+    // TABLA: CalendarioCalificaciones
+    // ==========================================
+    // Períodos de calificación configurables por colegio
+    var calendarioSheet = ss.getSheetByName('CalendarioCalificaciones');
+    if (!calendarioSheet) {
+      calendarioSheet = ss.insertSheet('CalendarioCalificaciones');
+      calendarioSheet.appendRow([
+        'pk_calendario',        // INT AUTO_INCREMENT - Primary Key
+        'fk_colegio',           // INT - Foreign Key -> Colegios.pk_colegio
+        'fecha_inicio',         // DATE
+        'fecha_fin',            // DATE
+        'descripcion',          // VARCHAR(100) - Ej: "1er Trimestre", "2do Cuatrimestre"
+        'creado_por',           // VARCHAR(20) - Foreign Key -> Usuarios.pk_usuario (DNI)
+        'fecha_creacion',       // DATETIME
+        'activo'                // BOOLEAN
+      ]);
+      creadas.push('CalendarioCalificaciones');
+    } else {
+      existentes.push('CalendarioCalificaciones');
+    }
+    
+    // ==========================================
+    // TABLA: Notificaciones
+    // ==========================================
+    // Sistema de notificaciones para usuarios
+    var notificacionesSheet = ss.getSheetByName('Notificaciones');
+    if (!notificacionesSheet) {
+      notificacionesSheet = ss.insertSheet('Notificaciones');
+      notificacionesSheet.appendRow([
+        'pk_notificacion',      // INT AUTO_INCREMENT - Primary Key
+        'fk_usuario',           // VARCHAR(20) - Foreign Key -> Usuarios.pk_usuario (DNI)
+        'tipo',                 // ENUM('CALENDARIO','MATERIA','GENERAL','SISTEMA')
+        'mensaje',              // TEXT
+        'fecha',                // DATETIME
+        'leida',                // BOOLEAN
+        'fk_referencia'         // VARCHAR(50) - ID del objeto relacionado (opcional)
+      ]);
+      creadas.push('Notificaciones');
+    } else {
+      existentes.push('Notificaciones');
+    }
+    
+    // ==========================================
+    // TABLA: ConfiguracionUI
+    // ==========================================
+    // Configuración personalizada de interfaz por usuario
+    var configUISheet = ss.getSheetByName('ConfiguracionUI');
+    if (!configUISheet) {
+      configUISheet = ss.insertSheet('ConfiguracionUI');
+      configUISheet.appendRow([
+        'fk_usuario',           // VARCHAR(20) - Primary Key / Foreign Key -> Usuarios.pk_usuario (DNI)
+        'iconos_visibles',      // TEXT - JSON array de iconos visibles
+        'orden_iconos',         // TEXT - JSON array de índices de orden
+        'fecha_actualizacion'   // DATETIME
+      ]);
+      creadas.push('ConfiguracionUI');
+    } else {
+      existentes.push('ConfiguracionUI');
+    }
+    
+    // ==========================================
+    // TABLA: Acciones (Log de auditoría)
+    // ==========================================
+    // Registro de acciones del sistema para auditoría
+    var accionesSheet = ss.getSheetByName('Acciones');
+    if (!accionesSheet) {
+      accionesSheet = ss.insertSheet('Acciones');
+      accionesSheet.appendRow([
+        'timestamp',            // DATETIME
+        'accion'                // TEXT - Descripción de la acción
+      ]);
+      creadas.push('Acciones');
+    } else {
+      existentes.push('Acciones');
+    }
+    
+    // ==========================================
+    // RESUMEN
+    // ==========================================
+    var resumen = '\n=== RESUMEN DE CREACIÓN DE BASE DE DATOS ===\n\n';
+    
+    if (creadas.length > 0) {
+      resumen += '✅ TABLAS CREADAS (' + creadas.length + '):\n';
+      for (var i = 0; i < creadas.length; i++) {
+        resumen += '   - ' + creadas[i] + '\n';
+      }
+      resumen += '\n';
+    }
+    
+    if (existentes.length > 0) {
+      resumen += '⚠️  TABLAS YA EXISTENTES (' + existentes.length + '):\n';
+      for (var j = 0; j < existentes.length; j++) {
+        resumen += '   - ' + existentes[j] + '\n';
+      }
+      resumen += '\n';
+    }
+    
+    resumen += 'Total de tablas en la DB: ' + (creadas.length + existentes.length) + '\n';
+    resumen += '\n===========================================';
+    
+    Logger.log(resumen);
+    
+    return {
+      ok: true,
+      msg: 'Base de datos creada/verificada exitosamente',
+      creadas: creadas,
+      existentes: existentes,
+      total: creadas.length + existentes.length
+    };
+    
+  } catch (e) {
+    Logger.log('ERROR en crearDB: ' + e.toString());
+    return {
+      ok: false,
+      msg: 'Error al crear la base de datos: ' + e.toString()
+    };
+  }
+}

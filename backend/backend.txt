@@ -1,0 +1,3496 @@
+// ==========================================
+// CONFIGURACIÓN
+// ==========================================
+// var SHEET_ID = 'REPLACE_WITH_YOUR_SPREADSHEET_ID'; // Reemplazar con el ID real o dejar así si es container-bound
+// var USERS_SHEET_NAME = 'Alumnos';
+// var COLEGIOS_SHEET_NAME = 'Colegios';
+// var ADMIN_EMAIL = 'admin@escuelapp.com'; // Reemplazar con email del administrador
+// var LOGO_URL = 'https://via.placeholder.com/80'; // Reemplazar con URL del logo
+
+function doPost(e) {
+
+  var output = ContentService.createTextOutput();
+  output.setMimeType(ContentService.MimeType.JSON);
+
+  try {
+    if (!e || !e.postData) {
+      return output.setContent(JSON.stringify({ ok: false, msg: 'No se recibieron datos POST' }));
+    }
+
+    var params = JSON.parse(e.postData.contents);
+    var action = params.action;
+
+    if (!action) {
+      return output.setContent(JSON.stringify({ ok: false, msg: 'Falta parámetro "action"' }));
+    }
+
+    var result = {};
+
+    switch (action) {
+      case 'login':
+        result = login(params.user, params.pass);
+        break;
+      case 'registerUser':
+        result = registerUser(params.data);
+        break;
+      case 'checkDni':
+        result = checkDni(params.dni);
+        break;
+      case 'checkEmail':
+        result = checkEmail(params.email);
+        break;
+      case 'getMyProfile':
+        result = getMyProfile(params.token);
+        break;
+      case 'updateUserProfile':
+        result = updateUserProfile(params.token, params.domicilio, params.email, params.fecha_nacimiento, params.partido, params.localidad);
+        break;
+      case 'updateUserPassword':
+        result = updateUserPassword(params.token, params.currentPass, params.newPass);
+        break;
+      case 'getDashboard':
+        result = getDashboard(params.token);
+        break;
+      case 'getProfesorMaterias':
+        result = getProfesorMaterias(params.token, params.collegeId);
+        break;
+      case 'getAlumnosMateria':
+        result = getAlumnosMateria(params.token, params.curso, params.materia);
+        break;
+      case 'logout':
+        result = logout(params.token);
+        break;
+      case 'requestPasswordReset':
+        result = requestPasswordReset(params.dni);
+        break;
+      case 'verifyResetCode':
+        result = verifyResetCode(params.dni, params.code);
+        break;
+      case 'resetPassword':
+        result = resetPassword(params.dni, params.code, params.newPassword);
+        break;
+      case 'registerCollege':
+        result = registerCollege(params.data);
+        break;
+      case 'searchUserByDNI':
+        result = searchUserByDNI(params.dni, params.collegeId);
+        break;
+      case 'linkUserToCollege':
+        result = linkUserToCollege(params.dni, params.collegeId, params.roles);
+        break;
+      case 'sendInvitationEmail':
+        result = sendInvitationEmail(params.email, params.collegeName);
+        break;
+      case 'getCollegeStaff':
+        result = getCollegeStaff(params.collegeId);
+        break;
+      case 'getSubjects':
+        result = getSubjects(params.collegeId);
+        break;
+      case 'createSubject':
+        result = createSubject(params);
+        break;
+      case 'deleteSubject':
+        result = deleteSubject(params.subjectId);
+        break;
+      case 'assignTeacherToSubject':
+        result = assignTeacherToSubject(params.subjectId, params.teacherDni);
+        break;
+      case 'deleteCollegeStaff':
+        result = deleteCollegeStaff(params.collegeId, params.userId);
+        break;
+      case 'updateCollegeStaffRole':
+        result = updateCollegeStaffRole(params.collegeId, params.userId, params.roles);
+        break;
+      case 'updateSubjectTeacher':
+        result = updateSubjectTeacher(params);
+        break;
+      case 'getSubjectDetail':
+        result = getSubjectDetail(params.subjectId);
+        break;
+      case 'getSubjectAssignmentHistory':
+        result = getSubjectAssignmentHistory(params.subjectId);
+        break;
+      case 'checkAndRevertTemporaryAssignments':
+        result = checkAndRevertTemporaryAssignments();
+        break;
+      case 'createStudent':
+        result = createStudent(params);
+        break;
+      case 'getStudents':
+        result = getStudents(params.collegeId, params.curso, params.division);
+        break;
+      case 'getStudentDetail':
+        result = getStudentDetail(params.studentId);
+        break;
+      case 'enrollStudent':
+        result = enrollStudent(params.data);
+        break;
+      case 'getStudentEnrollments':
+        result = getStudentEnrollments(params.studentDni);
+        break;
+      case 'getCalendar':
+        result = getCalendar(params.collegeId);
+        break;
+      case 'saveCalendarEvent':
+        result = saveCalendarEvent(params.data);
+        break;
+      case 'getNotifications':
+        result = getNotifications(params.userDni);
+        break;
+      case 'markNotificationRead':
+        result = markNotificationRead(params.notificationId);
+        break;
+      case 'getUIConfig':
+        result = getUIConfig(params.userDni);
+        break;
+      case 'saveUIConfig':
+      case 'updateUserUIConfig': // Alias for frontend compatibility
+        result = saveUIConfig(params.userDni, params.config);
+        break;
+      case 'getProtectedData':
+        result = getProtectedData(params.token);
+        break;
+      case 'enrollStudentsInNewSubject':
+        result = enrollStudentsInNewSubject(params);
+        break;
+      case 'deleteStudent':
+        result = deleteStudent(params.studentId, params.dni);
+        break;
+      case 'updateStudent':
+        result = updateStudent(params.studentId, params.data, params.dni);
+        break;
+      case 'getStudentSubjects':
+        result = getStudentSubjects(params.studentId);
+        break;
+      case 'addStudentSubject':
+        result = addStudentSubject(params.studentId, params.subjectId, params.condicion);
+        break;
+      case 'removeStudentSubject':
+        result = removeStudentSubject(params.studentId, params.subjectId);
+        break;
+      case 'enrollStudentInSubjects':
+        result = enrollStudentInSubjects(params.studentDni, params.curso, params.collegeId);
+        break;
+      case 'getAlumnosMateria':
+        result = getAlumnosMateria(params.curso, params.materia, params.collegeId);
+        break;
+      case 'getSubjectStudents':
+        result = getSubjectStudents(params.subjectId);
+        break;
+    }
+
+    return output.setContent(JSON.stringify(result));
+
+  } catch (error) {
+    return output.setContent(JSON.stringify({
+      ok: false,
+      msg: 'Error en servidor: ' + (error && error.message ? error.message : String(error))
+    }));
+  }
+}
+
+
+
+/**
+ * Devuelve la hoja "Alumnos" del spreadsheet.
+ * Si el proyecto está container-bound (script dentro del spreadsheet), se usa getActiveSpreadsheet().
+ * Si es standalone, reemplazar SPREADSHEET_ID por el id de tu spreadsheet.
+ */
+function getUsuariosSheet() {
+  var SPREADSHEET_ID = 'REPLACE_WITH_SPREADSHEET_ID'; // si estás dentro del spreadsheet deja este texto así
+  var ss;
+  if (SPREADSHEET_ID === 'REPLACE_WITH_SPREADSHEET_ID') {
+    ss = SpreadsheetApp.getActiveSpreadsheet();
+  } else {
+    ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  }
+  if (!ss) throw new Error('No se pudo abrir el spreadsheet. Revisa el SPREADSHEET_ID o enlaza este script al spreadsheet.');
+  var sheet = ss.getSheetByName('Alumnos');
+  if (!sheet) throw new Error('No se encontró la pestaña "Alumnos" en el spreadsheet indicado.');
+  return sheet;
+}
+
+/**
+ * Registra una acción simple del cliente en la hoja "Acciones"
+ * (timestamp, accion)
+ */
+function registrarAccionCliente(accion) {
+  try {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    if (!ss) {
+      // si no está container-bound tratamos de usar el ID en getUsuariosSheet()
+      var tmp = getUsuariosSheet(); // esto lanzará error si no encuentra el spreadsheet
+      ss = tmp.getParent();
+    }
+    var logSheet = ss.getSheetByName('Acciones');
+    if (!logSheet) {
+      logSheet = ss.insertSheet('Acciones');
+      logSheet.getRange(1, 1, 1, 2).setValues([['Timestamp', 'Accion']]);
+    }
+    logSheet.appendRow([new Date(), accion]);
+  } catch (err) {
+    // No interrumpimos la app por un fallo de logging
+    Logger.log('Error en registrarAccionCliente: ' + err);
+  }
+}
+
+/**
+ * Buscar alumno con nombre, apellido y dni.
+ * - Solo ejecuta búsqueda si los 3 campos vienen no vacíos (verificación adicional server-side).
+ * - Retorna objeto con estado:
+ *    { ok: true/false, found: true/false, active: true/false, data: {...}, message: '...' }
+ */
+function buscarAlumno(nombre, apellido, dni) {
+  nombre = (nombre || '').toString().trim();
+  apellido = (apellido || '').toString().trim();
+  dni = (dni || '').toString().trim();
+
+  // registrar intento de búsqueda
+  registrarAccionCliente('Intento de búsqueda - nombre: "' + nombre + '", apellido: "' + apellido + '", dni: "' + dni + '"');
+
+  if (!nombre || !apellido || !dni) {
+    registrarAccionCliente('Búsqueda abortada por datos incompletos');
+    return { ok: false, found: false, message: 'Faltan datos obligatorios (nombre, apellido, dni).' };
+  }
+
+  try {
+    var sheet = getUsuariosSheet();
+    var dataRange = sheet.getDataRange();
+    var values = dataRange.getValues(); // incluye encabezado
+    if (values.length <= 1) {
+      registrarAccionCliente('Búsqueda fallida - hoja Alumnos vacía (solo encabezado o inexistente)');
+      return { ok: true, found: false, message: 'No hay registros en la hoja "Alumnos".' };
+    }
+
+    // buscamos filas (empezando en la fila 2)
+    var foundRow = null;
+    for (var r = 1; r < values.length; r++) {
+      var row = values[r];
+      var pk_alumno = (row[0] || '').toString().trim(); // Col A - DNI
+      var nombreRow = (row[1] || '').toString().trim(); // Col B
+      var apellidoRow = (row[2] || '').toString().trim(); // Col C
+      // comparaciones case-insensitive
+      if (pk_alumno === dni && nombreRow.toLowerCase() === nombre.toLowerCase() && apellidoRow.toLowerCase() === apellido.toLowerCase()) {
+        foundRow = row;
+        break;
+      }
+    }
+
+    if (!foundRow) {
+      registrarAccionCliente('Búsqueda sin coincidencias para dni "' + dni + '" y nombre/apellido.');
+      return { ok: true, found: false, message: 'No existen datos coincidentes.' };
+    }
+
+    // mapeo de columnas según tu estructura:
+    // A pk_alumno (DNI)
+    // B nombre
+    // C apellido
+    // D email
+    // E rol
+    // F password
+    // G fk_colegio
+    // H activo (booleano)
+    var activoVal = foundRow[7];
+    var isActive = parseActivo(activoVal);
+
+    var resultData = {
+      pk_alumno: (foundRow[0] || '').toString(),
+      nombre: (foundRow[1] || '').toString(),
+      apellido: (foundRow[2] || '').toString(),
+      email: (foundRow[3] || '').toString(),
+      rol: (foundRow[4] || '').toString(),
+      // password intencionalmente NO se envía al cliente por seguridad
+      fk_colegio: (foundRow[6] || '').toString(),
+      activoRaw: activoVal
+    };
+
+    if (!isActive) {
+      registrarAccionCliente('Alumno encontrado pero INACTIVO - dni: "' + dni + '". Acceso denegado.');
+      return { ok: true, found: true, active: false, data: resultData, message: 'El alumno existe pero está INACTIVO. No puede acceder.' };
+    } else {
+      registrarAccionCliente('Alumno encontrado y ACTIVO - dni: "' + dni + '". Resultado devuelto al cliente.');
+      return { ok: true, found: true, active: true, data: resultData, message: 'Alumno encontrado.' };
+    }
+
+  } catch (err) {
+    registrarAccionCliente('Error en buscarAlumno: ' + err.toString());
+    return { ok: false, found: false, message: 'Ocurrió un error en el servidor: ' + err.toString() };
+  }
+}
+
+/**
+ * Interpretación flexible del campo "activo".
+ * Acepta boolean, "TRUE"/"FALSE", "1"/"0", 1/0, "si"/"no", etc.
+ */
+function parseActivo(val) {
+  if (val === true) return true;
+  if (val === false) return false;
+  if (val === null || val === undefined) return false;
+  var s = ('' + val).toString().trim().toLowerCase();
+  if (s === '') return false;
+  if (s === 'true' || s === 't' || s === 'si' || s === 'sí' || s === '1' || s === 'y' || s === 'yes') return true;
+  if (s === 'false' || s === 'f' || s === 'no' || s === '0' || s === 'n' || s === 'none') return false;
+  // si no reconocemos, por seguridad lo consideramos false (inactivo)
+  return false;
+}
+
+/**
+ * include() helper si quieres dividir HTML (no obligatorio aquí)
+ */
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+
+// ==========================================
+// NUEVA FUNCIÓN DE REGISTRO - ACTUALIZADA
+// ==========================================
+function registerUser(data) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(USERS_SHEET_NAME);
+    if (!sheet) return { ok: false, msg: 'Hoja de usuarios no encontrada' };
+
+    var values = sheet.getDataRange().getValues();
+
+    // Validar duplicados (DNI o Email)
+    for (var i = 1; i < values.length; i++) {
+      var row = values[i];
+      if (String(row[0]) === String(data.dni)) {
+        return { ok: false, msg: 'El DNI ya está registrado.' };
+      }
+      if (String(row[3]).toLowerCase() === String(data.email).toLowerCase()) {
+        return { ok: false, msg: 'El email ya está registrado.' };
+      }
+    }
+
+    // HASHEAR LA CONTRASEÑA ANTES DE GUARDAR
+    var salt = generateSalt();
+    var hashedPassword = hashWithSalt(data.password, salt);
+    var passwordToStore = salt + ':' + hashedPassword;
+
+    // Determinar el rol: si viene vacío, asignar "Padre" por defecto
+    var rolToStore = data.rol || 'Padre';
+
+    var newRow = [
+      data.dni,                 // 0
+      data.nombre,              // 1
+      data.apellido,            // 2
+      data.email,               // 3
+      data.fecha_nacimiento,    // 4
+      data.domicilio,           // 5
+      data.partido,             // 6
+      data.localidad,           // 7
+      rolToStore,               // 8 (Padre por defecto si viene vacío)
+      passwordToStore,          // 9 (HASHEADA con salt)
+      '',                       // 10 fk_colegio (vacío por defecto)
+      true                      // 11 activo
+    ];
+
+    sheet.appendRow(newRow);
+
+    return { ok: true, msg: 'Usuario registrado exitosamente' };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al registrar usuario: ' + e.toString() };
+  }
+}
+
+// ==========================================
+// LOGIN ACTUALIZADO - CORREGIDO
+// ==========================================
+function login(user, pass) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(USERS_SHEET_NAME);
+    if (!sheet) return { ok: false, msg: 'Hoja de usuarios no encontrada' };
+
+    var data = sheet.getDataRange().getValues();
+
+    var IDX_EMAIL = 3;
+    var IDX_PASS = 9;
+    var IDX_ACTIVO = 11;
+
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      var email = String(row[IDX_EMAIL]).trim();
+      var dbPass = String(row[IDX_PASS]).trim();
+
+      if (email.toLowerCase() === String(user).trim().toLowerCase()) {
+        // Verificar contraseña HASHEADA
+        var isValid = false;
+
+        // Si la contraseña tiene formato salt:hash
+        if (dbPass.indexOf(':') !== -1) {
+          var parts = dbPass.split(':');
+          var salt = parts[0];
+          var storedHash = parts[1];
+          var inputHash = hashWithSalt(String(pass).trim(), salt);
+          isValid = (inputHash === storedHash);
+        } else {
+          // Contraseña en texto plano (legacy) - hashear y actualizar
+          if (dbPass === String(pass).trim()) {
+            isValid = true;
+            // Actualizar a formato hasheado
+            var newSalt = generateSalt();
+            var newHash = hashWithSalt(String(pass).trim(), newSalt);
+            sheet.getRange(i + 1, IDX_PASS + 1).setValue(newSalt + ':' + newHash);
+          }
+        }
+
+        if (isValid) {
+          var token = Utilities.getUuid();
+          var userInfo = {
+            pk_usuario: row[0],        // DNI
+            dni: row[0],               // DNI (duplicado para consistencia)
+            usuario: email,
+            nombre: row[1],
+            apellido: row[2],
+            email: row[3],
+            fecha_nacimiento: row[4],  // AGREGAR
+            domicilio: row[5],         // AGREGAR
+            partido: row[6],           // AGREGAR
+            localidad: row[7],         // AGREGAR
+            rol: row[8],
+            fk_colegio: row[10]
+          };
+
+          CacheService.getScriptCache().put('session_' + token, JSON.stringify(userInfo), 3600);
+
+          return { ok: true, token: token, user: userInfo };
+        } else {
+          return { ok: false, msg: 'Contraseña incorrecta' };
+        }
+      }
+    }
+
+    return { ok: false, msg: 'Usuario no encontrado' };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al leer usuarios: ' + e.toString() };
+  }
+}
+
+// ==========================================
+// NUEVA FUNCIÓN: checkDni
+// ==========================================
+function checkDni(dni) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(USERS_SHEET_NAME);
+    if (!sheet) return { ok: false, msg: 'Hoja de usuarios no encontrada' };
+
+    var values = sheet.getDataRange().getValues();
+
+    for (var i = 1; i < values.length; i++) {
+      if (String(values[i][0]) === String(dni)) {
+        return { exists: true };
+      }
+    }
+
+    return { exists: false };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al verificar DNI: ' + e.toString() };
+  }
+}
+
+
+function logout(token) {
+  if (token) {
+    try {
+      CacheService.getScriptCache().remove('session_' + token);
+      CacheService.getScriptCache().remove('session_colegio_' + token);
+    } catch (e) { }
+  }
+  return { ok: true, msg: 'Sesión cerrada' };
+}
+
+function getDashboard(token) {
+  var user = getSession(token);
+  if (!user) return { ok: false, msg: 'Sesión expirada o inválida' };
+
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+
+    // 1. Obtener colegios y roles desde Personal_Colegios
+    var staffSheet = ss.getSheetByName('Personal_Colegios');
+    var userCollegesMap = {}; // Map: ID_Colegio -> Rol
+
+    if (staffSheet) {
+      var staffData = staffSheet.getDataRange().getValues();
+      // Estructura esperada:
+      // Col A (0): ID
+      // Col B (1): DNI_Usuario
+      // Col C (2): ID_Colegio
+      // Col D (3): Roles
+      // Col E (4): Activo
+
+      for (var i = 1; i < staffData.length; i++) {
+        // Verificar DNI y que esté ACTIVO
+        var rowDni = String(staffData[i][1]);
+        var isActive = staffData[i][4]; // Columna E
+
+        // Convertir isActive a boolean si es string
+        if (typeof isActive === 'string') {
+          isActive = (isActive.toLowerCase() === 'true');
+        }
+
+        if (rowDni === String(user.dni) && isActive) {
+          var colId = String(staffData[i][2]);
+          var roles = String(staffData[i][3] || '');
+          userCollegesMap[colId] = roles;
+        }
+      }
+    }
+
+    // 2. Obtener detalles de los colegios
+    var sheet = ss.getSheetByName(COLEGIOS_SHEET_NAME);
+    if (!sheet) {
+      return {
+        ok: true,
+        user: user,
+        colegio: { nombre: 'Colegio no configurado' },
+        colleges: []
+      };
+    }
+
+    // FIX: Definir 'data' antes de usarlo (Soluciona ReferenceError)
+    var data = sheet.getDataRange().getValues();
+
+    var collegesList = [];
+    var userCollegesLegacy = String(user.fk_colegio || '').split(',').map(function (c) { return c.trim(); });
+
+    // Asumimos Col 0 = ID, Col 1 = tipo, Col 2 = Nombre, Col 3 = Direccion
+    for (var i = 1; i < data.length; i++) {
+      var colId = String(data[i][0]);
+
+      // Verificar si el usuario pertenece al colegio
+      // Ya sea por Personal_Colegios (Prioridad) o por user.fk_colegio (Legacy)
+      var hasAccess = userCollegesMap.hasOwnProperty(colId) || userCollegesLegacy.indexOf(colId) !== -1;
+
+      if (hasAccess) {
+        // Determinar rol: Usar el de Personal_Colegios si existe, sino el global del usuario
+        var rolEnColegio = userCollegesMap[colId] || user.rol;
+
+        collegesList.push({
+          pk_colegio: colId,
+          nombre: String(data[i][2] || 'Sin nombre'),
+          direccion: String(data[i][3] || ''),
+          rol: rolEnColegio // Enviamos el rol específico
+        });
+      }
+    }
+
+    // Si encontramos colegios, el primero será el default
+    var colegioInfo = null;
+    if (collegesList.length > 0) {
+      colegioInfo = collegesList[0];
+    }
+
+    return {
+      ok: true,
+      user: user,
+      colegio: colegioInfo,
+      colleges: collegesList
+    };
+  } catch (e) {
+    return { ok: false, msg: 'Error al leer colegios: ' + e.toString() };
+  }
+}
+
+function getProfesorMaterias(token, collegeId) {
+  var user = getSession(token);
+  if (!user) return { ok: false, msg: 'Sesión expirada' };
+
+  var colegioId = collegeId ? String(collegeId) : String(user.fk_colegio);
+
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var materiasSheet = ss.getSheetByName('Materias');
+
+    if (!materiasSheet) {
+      return { ok: true, materias: [] };
+    }
+
+    var data = materiasSheet.getDataRange().getValues();
+    var materias = [];
+
+    // Col A: ID, B: FK_Colegio, C: Nombre, D: Curso, E: FK_Docente, F: Horario, G: Activo
+    // H: Tipo_Asignacion, I: Fecha_Inicio, J: Fecha_Fin, K: Docente_Titular_DNI, L: Docente_Titular_Nombre
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+
+      // Verificar que sea del colegio correcto, esté activa y el docente sea el usuario actual
+      if (String(row[1]) === colegioId && row[6] === true && String(row[4]) === String(user.pk_usuario)) {
+        materias.push({
+          id: row[0],
+          materia: row[2],
+          curso: row[3],
+          horario: row[5] || '',
+          tipoAsignacion: row[7] || 'Titular',
+          fechaInicio: row[8] || '',
+          fechaFin: row[9] || ''
+        });
+      }
+    }
+
+    return { ok: true, materias: materias };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al obtener materias: ' + e.toString() };
+  }
+}
+
+function getAlumnosMateria(token, curso, materia) {
+  var user = getSession(token);
+  if (!user) return { ok: false, msg: 'Sesión expirada' };
+
+  try {
+    var colegioId = String(user.fk_colegio);
+    var year = "2025";
+
+    if (!DBGeneral[colegioId] || !DBGeneral[colegioId][year]) {
+      return { ok: true, alumnos: [] };
+    }
+
+    var principalId = DBGeneral[colegioId][year]['principal'];
+    if (!principalId) return { ok: true, alumnos: [] };
+
+    var ss = SpreadsheetApp.openById(principalId);
+    var sheetCurso = ss.getSheetByName(curso);
+
+    if (!sheetCurso) return { ok: true, alumnos: [] };
+
+    var values = sheetCurso.getDataRange().getValues();
+    var headers = values[0].map(function (h) { return String(h || '').toUpperCase(); });
+    var nombreIdx = headers.indexOf("NOMBRE");
+    var apellidoIdx = headers.indexOf("APELLIDO");
+
+    var alumnos = [];
+    for (var i = 1; i < values.length; i++) {
+      var row = values[i];
+      var alumno = (row[apellidoIdx] || "") + ", " + (row[nombreIdx] || "");
+      alumnos.push({
+        nombre: alumno,
+        apellido: String(row[apellidoIdx] || ''),
+        dni: '', // Agregar si existe la columna
+        promedio: null,
+        id: 'a_' + i
+      });
+    }
+
+    return { ok: true, alumnos: alumnos };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al leer alumnos: ' + e.toString() };
+  }
+}
+
+// ==========================================
+// HELPERS
+// ==========================================
+
+function getSession(token) {
+  if (!token) return null;
+  try {
+    var cache = CacheService.getScriptCache();
+    var userJson = cache.get('session_' + token);
+    if (!userJson) return null;
+    return JSON.parse(userJson);
+  } catch (e) {
+    return null;
+  }
+}
+
+
+
+// ==========================================
+// FUNCIONES AUXILIARES
+// ==========================================
+
+function generateSalt() {
+  return Utilities.getUuid().replace(/-/g, '').slice(0, 16);
+}
+
+function hashWithSalt(password, salt) {
+  var raw = salt + password;
+  var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, raw);
+  var hex = '';
+  for (var i = 0; i < digest.length; i++) {
+    var v = (digest[i] + 256) % 256;
+    hex += ('0' + v.toString(16)).slice(-2);
+  }
+  return hex;
+}
+
+
+// ==========================================
+// ELIMINAR/REEMPLAZAR esta función
+// ==========================================
+function desencriptar(claveEncriptada) {
+  // YA NO SE USA - la lógica está en login()
+  return claveEncriptada;
+}
+
+// ==========================================
+// NUEVA FUNCIÓN: checkEmail
+// ==========================================
+function checkEmail(email) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(USERS_SHEET_NAME);
+    if (!sheet) return { ok: false, msg: 'Hoja de usuarios no encontrada' };
+
+    var values = sheet.getDataRange().getValues();
+
+    for (var i = 1; i < values.length; i++) {
+      if (String(values[i][3]).toLowerCase() === String(email).toLowerCase()) {
+        return { exists: true };
+      }
+    }
+
+    return { exists: false };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al verificar email: ' + e.toString() };
+  }
+}
+
+// ==========================================
+// NUEVA FUNCIÓN: getMyProfile
+// ==========================================
+function getMyProfile(token) {
+  var user = getSession(token);
+  if (!user) return { ok: false, msg: 'Sesión expirada o inválida' };
+
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(USERS_SHEET_NAME);
+    if (!sheet) return { ok: false, msg: 'Hoja de usuarios no encontrada' };
+
+    var data = sheet.getDataRange().getValues();
+
+    // Buscar usuario por DNI
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      if (String(row[0]) === String(user.pk_usuario)) {
+        var userProfile = {
+          dni: row[0],
+          nombre: row[1],
+          apellido: row[2],
+          email: row[3],
+          fecha_nacimiento: row[4],
+          domicilio: row[5],
+          partido: row[6],
+          localidad: row[7],
+          rol: row[8],
+          fk_colegio: row[10],
+          activo: row[11]
+        };
+        return { ok: true, user: userProfile };
+      }
+    }
+
+    return { ok: false, msg: 'Usuario no encontrado' };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al obtener perfil: ' + e.toString() };
+  }
+}
+
+// ==========================================
+// NUEVA FUNCIÓN: updateUserProfile
+// ==========================================
+function updateUserProfile(token, domicilio, email, fecha_nacimiento, partido, localidad) {
+  var user = getSession(token);
+  if (!user) return { ok: false, msg: 'Sesión expirada o inválida' };
+
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(USERS_SHEET_NAME);
+    if (!sheet) return { ok: false, msg: 'Hoja de usuarios no encontrada' };
+
+    var data = sheet.getDataRange().getValues();
+
+    // Buscar usuario por DNI
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      if (String(row[0]) === String(user.pk_usuario)) {
+        // Actualizar solo los campos editables
+        if (email) sheet.getRange(i + 1, 4).setValue(email);
+        if (domicilio) sheet.getRange(i + 1, 6).setValue(domicilio);
+        if (fecha_nacimiento) sheet.getRange(i + 1, 5).setValue(fecha_nacimiento);
+        if (partido) sheet.getRange(i + 1, 7).setValue(partido);
+        if (localidad) sheet.getRange(i + 1, 8).setValue(localidad);
+
+        return { ok: true, msg: 'Perfil actualizado correctamente' };
+      }
+    }
+
+    return { ok: false, msg: 'Usuario no encontrado' };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al actualizar perfil: ' + e.toString() };
+  }
+}
+
+// ==========================================
+// NUEVA FUNCIÓN: updateUserPassword (sin contraseña actual)
+// ==========================================
+function updateUserPassword(token, currentPass, newPass) {
+  var user = getSession(token);
+  if (!user) return { ok: false, msg: 'Sesión expirada o inválida' };
+
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(USERS_SHEET_NAME);
+    if (!sheet) return { ok: false, msg: 'Hoja de usuarios no encontrada' };
+
+    var data = sheet.getDataRange().getValues();
+
+    // Buscar usuario por DNI
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      if (String(row[0]) === String(user.pk_usuario)) {
+        // Hashear nueva contraseña
+        var salt = generateSalt();
+        var hashedPassword = hashWithSalt(newPass, salt);
+        var passwordToStore = salt + ':' + hashedPassword;
+
+        // Actualizar contraseña
+        sheet.getRange(i + 1, 10).setValue(passwordToStore);
+
+        return { ok: true, msg: 'Contraseña actualizada correctamente' };
+      }
+    }
+
+    return { ok: false, msg: 'Usuario no encontrado' };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al actualizar contraseña: ' + e.toString() };
+  }
+}
+
+// ==========================================
+// NUEVA FUNCIÓN: searchUserByDNI
+// ==========================================
+// ==========================================
+// NUEVA FUNCIÓN: searchUserByDNI (Actualizada)
+// ==========================================
+function searchUserByDNI(dni, collegeId) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(USERS_SHEET_NAME);
+    if (!sheet) return { ok: false, msg: 'Hoja de usuarios no encontrada' };
+
+    var data = sheet.getDataRange().getValues();
+    var foundUser = null;
+
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      if (String(row[0]) === String(dni)) {
+        foundUser = {
+          dni: row[0],
+          nombre: row[1],
+          apellido: row[2],
+          email: row[3],
+          fk_colegio: row[10]
+        };
+        break;
+      }
+    }
+
+    if (!foundUser) {
+      return { ok: false, msg: 'Usuario no encontrado' };
+    }
+
+    // Si se pasa collegeId, buscar roles existentes en Personal_Colegios
+    if (collegeId) {
+      var staffSheet = ss.getSheetByName('Personal_Colegios');
+      if (staffSheet) {
+        var staffData = staffSheet.getDataRange().getValues();
+        // Col B (1): DNI, Col C (2): ID_Colegio, Col D (3): Roles, Col E (4): Activo
+        for (var j = 1; j < staffData.length; j++) {
+          var sRow = staffData[j];
+          // Verificar DNI y Colegio
+          if (String(sRow[1]) === String(dni) && String(sRow[2]) === String(collegeId)) {
+            // Verificar si está activo (Columna E)
+            var isActive = sRow[4];
+            if (typeof isActive === 'string') isActive = (isActive.toLowerCase() === 'true');
+
+            if (isActive) {
+              foundUser.roles = String(sRow[3] || ''); // Agregar roles encontrados
+            }
+            break;
+          }
+        }
+      }
+    }
+
+    return { ok: true, user: foundUser };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al buscar usuario: ' + e.toString() };
+  }
+}
+
+// ==========================================
+// NUEVA FUNCIÓN: linkUserToCollege (Actualizada con Roles)
+// ==========================================
+// ==========================================
+// NUEVA FUNCIÓN: linkUserToCollege (Actualizada)
+// ==========================================
+function linkUserToCollege(dni, collegeId, roles) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+
+    // 1. Actualizar Personal_Colegios
+    var staffSheet = ss.getSheetByName('Personal_Colegios');
+    if (!staffSheet) {
+      staffSheet = ss.insertSheet('Personal_Colegios');
+      staffSheet.appendRow(['ID', 'DNI_Usuario', 'ID_Colegio', 'Roles', 'Activo', 'Fecha_Alta']);
+    }
+
+    // Verificar si ya existe la relación
+    var staffData = staffSheet.getDataRange().getValues();
+    var exists = false;
+    var rowIndex = -1;
+    var currentRoles = '';
+
+    for (var i = 1; i < staffData.length; i++) {
+      if (String(staffData[i][1]) === String(dni) && String(staffData[i][2]) === String(collegeId)) {
+        exists = true;
+        rowIndex = i + 1;
+        currentRoles = String(staffData[i][3] || '');
+        break;
+      }
+    }
+
+    if (exists) {
+      // Si los roles son idénticos, avisar
+      if (currentRoles === roles) {
+        return { ok: false, msg: 'El usuario ya tiene asignados exactamente estos roles en este colegio.' };
+      }
+
+      // Actualizar roles
+      staffSheet.getRange(rowIndex, 4).setValue(roles);
+      // Asegurar que esté activo si se actualiza
+      staffSheet.getRange(rowIndex, 5).setValue(true);
+    } else {
+      var newId = Utilities.getUuid();
+      staffSheet.appendRow([newId, dni, collegeId, roles, true, new Date()]);
+    }
+
+    // 2. Actualizar Usuarios (fk_colegio) - Mantener compatibilidad
+    var userSheet = ss.getSheetByName(USERS_SHEET_NAME);
+    var userData = userSheet.getDataRange().getValues();
+
+    for (var i = 1; i < userData.length; i++) {
+      var row = userData[i];
+      if (String(row[0]) === String(dni)) {
+        var currentColleges = String(row[10] || '');
+        var collegesArray = currentColleges.split(',').map(function (c) { return c.trim(); });
+
+        if (collegesArray.indexOf(String(collegeId)) === -1) {
+          if (currentColleges.length > 0) {
+            currentColleges += ',' + collegeId;
+          } else {
+            currentColleges = String(collegeId);
+          }
+          userSheet.getRange(i + 1, 11).setValue(currentColleges);
+        }
+        break;
+      }
+    }
+
+    return { ok: true, msg: 'Personal vinculado correctamente' };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al vincular personal: ' + e.toString() };
+  }
+}
+
+// ==========================================
+// GESTIÓN DE MATERIAS
+// ==========================================
+
+function getSubjects(collegeId) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var subjectsSheet = ss.getSheetByName('Materias');
+    if (!subjectsSheet) return { ok: true, subjects: [] };
+
+    var subjectsData = subjectsSheet.getDataRange().getValues();
+    var subjects = [];
+    var today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalizar a medianoche
+
+    // Obtener mapa de docentes para mostrar nombres
+    var userMap = {};
+    var usersSheet = ss.getSheetByName(USERS_SHEET_NAME);
+    if (usersSheet) {
+      var usersData = usersSheet.getDataRange().getValues();
+      for (var i = 1; i < usersData.length; i++) {
+        // DNI -> {nombre, apellido}
+        userMap[String(usersData[i][0])] = {
+          nombre: usersData[i][1],
+          apellido: usersData[i][2]
+        };
+      }
+    }
+
+    // Col A: ID, B: FK_Colegio, C: Nombre, D: Curso, E: FK_Docente, F: Horario, G: Activo
+    // H: Tipo_Asignacion, I: Fecha_Inicio, J: Fecha_Fin, K: Docente_Titular_DNI, L: Docente_Titular_Nombre
+    for (var i = 1; i < subjectsData.length; i++) {
+      var row = subjectsData[i];
+      // Verificar colegio y activo
+      if (String(row[1]) === String(collegeId) && row[6] === true) {
+
+        // ⚠️ VERIFICACIÓN AUTOMÁTICA DE SUPLENCIAS EXPIRADAS
+        if (row[7] === 'Suplente' && row[9]) {
+          var fechaFin = new Date(row[9]);
+          fechaFin.setHours(0, 0, 0, 0);
+
+          // Si la suplencia expiró, revertir al titular
+          if (fechaFin < today && row[10]) {
+            var rowIndex = i + 1;
+            var titularDNI = row[10];
+            var titularName = row[11];
+
+            // Guardar en historial antes de revertir
+            saveAssignmentHistory(row[0], row[4], 'Suplente', row[8], row[9], 'Finalizado automáticamente');
+
+            // Revertir al titular
+            subjectsSheet.getRange(rowIndex, 5).setValue(titularDNI); // FK_Docente
+            subjectsSheet.getRange(rowIndex, 8).setValue('Titular'); // Tipo_Asignacion
+            subjectsSheet.getRange(rowIndex, 9).setValue(new Date()); // Fecha_Inicio
+            subjectsSheet.getRange(rowIndex, 10).setValue(''); // Fecha_Fin
+            subjectsSheet.getRange(rowIndex, 11).setValue(''); // Docente_Titular_DNI
+            subjectsSheet.getRange(rowIndex, 12).setValue(''); // Docente_Titular_Nombre
+
+            // Actualizar datos en memoria para devolver correctamente
+            row[4] = titularDNI;
+            row[7] = 'Titular';
+            row[8] = new Date();
+            row[9] = '';
+            row[10] = '';
+            row[11] = '';
+
+            // Guardar reversión en historial
+            saveAssignmentHistory(row[0], titularDNI, 'Titular', new Date(), '', 'Revertido automáticamente');
+
+            Logger.log('Suplencia expirada revertida automáticamente: ' + row[0]);
+          }
+        }
+
+        var docenteInfo = userMap[String(row[4])] || null;
+
+        subjects.push({
+          id: row[0],
+          nombre: row[2],
+          curso: row[3],
+          fk_docente: row[4],
+          docenteNombre: docenteInfo ? (docenteInfo.nombre + ' ' + docenteInfo.apellido) : 'Sin asignar',
+          horario: row[5],
+          tipoAsignacion: row[7] || 'Titular',
+          fechaInicio: row[8] || '',
+          fechaFin: row[9] || '',
+          docenteTitularDNI: row[10] || '',
+          docenteTitularNombre: row[11] || ''
+        });
+      }
+    }
+
+    return { ok: true, subjects: subjects };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al obtener materias: ' + e.toString() };
+  }
+}
+
+function createSubject(data) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName('Materias');
+    if (!sheet) {
+      sheet = ss.insertSheet('Materias');
+      sheet.appendRow(['ID', 'FK_Colegio', 'Nombre', 'Curso', 'FK_Docente', 'Horario', 'Activo', 'Tipo_Asignacion', 'Fecha_Inicio', 'Fecha_Fin', 'Docente_Titular_DNI', 'Docente_Titular_Nombre']);
+    }
+
+    var newId = Utilities.getUuid();
+    var assignmentType = data.assignmentType || 'Titular';
+
+    // Validar fechas si es suplente
+    if (assignmentType === 'Suplente') {
+      if (!data.startDate || !data.endDate) {
+        return { ok: false, msg: 'Las asignaciones de suplente requieren fecha de inicio y fin' };
+      }
+
+      var start = new Date(data.startDate);
+      var end = new Date(data.endDate);
+
+      if (end <= start) {
+        return { ok: false, msg: 'La fecha de fin debe ser posterior a la fecha de inicio' };
+      }
+    }
+
+    sheet.appendRow([
+      newId,
+      data.collegeId,
+      String(data.nombre || '').toUpperCase(), // Convertir a mayúsculas
+      data.curso,
+      data.docenteId || '', // Puede ser vacío
+      data.horario || '',
+      true, // Activo
+      assignmentType, // Tipo_Asignacion
+      data.startDate ? new Date(data.startDate) : new Date(), // Fecha_Inicio
+      data.endDate ? new Date(data.endDate) : '', // Fecha_Fin
+      '', // Docente_Titular_DNI (vacío para nueva materia)
+      '' // Docente_Titular_Nombre (vacío para nueva materia)
+    ]);
+
+    // Si es suplente, crear trigger automático
+    if (assignmentType === 'Suplente' && data.endDate) {
+      createReversionTrigger(newId, new Date(data.endDate));
+    }
+
+    // ✨ AUTO-INSCRIPCIÓN DE ALUMNOS EXISTENTES
+    // Inscribir automáticamente a todos los alumnos con condición CURSA del curso correspondiente
+    var alumnosSheet = ss.getSheetByName('Alumnos');
+    if (alumnosSheet) {
+      var alumnosData = alumnosSheet.getDataRange().getValues();
+      var inscripcionesSheet = ss.getSheetByName('Inscripciones');
+
+      if (!inscripcionesSheet) {
+        inscripcionesSheet = ss.insertSheet('Inscripciones');
+        inscripcionesSheet.appendRow([
+          'pk_inscripcion', 'fk_alumno', 'fk_materia', 'fk_colegio',
+          'year', 'condicion', 'fecha_inscripcion', 'activo'
+        ]);
+      }
+
+      var currentYear = new Date().getFullYear();
+      var enrolledCount = 0;
+      var materiaCurso = String(data.curso || '').toUpperCase().trim();
+      
+      // Get existing enrollments to prevent duplicates
+      var enrollData = inscripcionesSheet.getDataRange().getValues();
+
+      // Buscar alumnos que coincidan con el curso de la materia
+      for (var i = 1; i < alumnosData.length; i++) {
+        var alumno = alumnosData[i];
+        var alumnoCollegeId = String(alumno[5]); // Col F: fk_colegio
+        var alumnoCurso = String(alumno[6]);     // Col G: curso
+        var alumnoCondicion = String(alumno[8]); // Col I: condicion
+        var alumnoActivo = alumno[9];            // Col J: activo
+
+        // Verificar si el alumno pertenece al mismo colegio, curso y tiene condición CURSA
+        if (alumnoCollegeId === String(data.collegeId) &&
+          alumnoActivo === true &&
+          alumnoCondicion === 'CURSA') {
+
+          // Comparar curso (ej: "QUINTO" con "QUINTO" o "QUINTO A")
+          var cursoAlumnoNorm = alumnoCurso.toUpperCase().trim();
+
+          // Verificar si coincide el curso
+          if (materiaCurso === cursoAlumnoNorm || materiaCurso.startsWith(cursoAlumnoNorm + ' ')) {
+            
+            // Check if already enrolled
+            var isEnrolled = false;
+            for (var k = 1; k < enrollData.length; k++) {
+               // Col B (1) = fk_alumno, Col C (2) = fk_materia
+               if (String(enrollData[k][1]) === String(alumno[0]) && String(enrollData[k][2]) === String(newId)) {
+                 isEnrolled = true;
+                 break;
+               }
+            }
+            
+            if (!isEnrolled) {
+              var pkInscripcion = Utilities.getUuid();
+  
+              inscripcionesSheet.appendRow([
+                pkInscripcion,                    // pk_inscripcion
+                String(alumno[0]),                // fk_alumno (DNI)
+                newId,                            // fk_materia (ID de la nueva materia)
+                String(data.collegeId),           // fk_colegio
+                currentYear,                      // year (año lectivo actual)
+                'CURSA',                          // condicion
+                new Date(),                       // fecha_inscripcion
+                true                              // activo
+              ]);
+  
+              enrolledCount++;
+            }
+          }
+        }
+      }
+
+      Logger.log('Materia ' + newId + ' creada. ' + enrolledCount + ' alumnos inscritos automáticamente');
+    }
+
+    return { ok: true, msg: 'Materia creada exitosamente', subjectId: newId };
+
+  } catch (e) {
+    Logger.log('Error en createSubject: ' + e.toString());
+    return { ok: false, msg: 'Error al crear materia: ' + e.toString() };
+  }
+}
+
+function deleteSubject(subjectId) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName('Materias');
+    if (!sheet) return { ok: false, msg: 'Hoja de materias no encontrada' };
+
+    var data = sheet.getDataRange().getValues();
+
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(subjectId)) {
+        // Baja lógica: poner Activo (Col G / índice 6) en FALSE
+        sheet.getRange(i + 1, 7).setValue(false);
+        return { ok: true, msg: 'Materia eliminada correctamente' };
+      }
+    }
+
+    return { ok: false, msg: 'Materia no encontrada' };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al eliminar materia: ' + e.toString() };
+  }
+}
+
+// ==========================================
+// ENHANCED: updateSubjectTeacher
+// ==========================================
+function updateSubjectTeacher(data) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName('Materias');
+    if (!sheet) return { ok: false, msg: 'Hoja de materias no encontrada' };
+
+    var subjectsData = sheet.getDataRange().getValues();
+    var rowIndex = -1;
+
+    // Buscar la materia
+    for (var i = 1; i < subjectsData.length; i++) {
+      if (String(subjectsData[i][0]) === String(data.subjectId)) {
+        rowIndex = i + 1; // +1 para índice de sheet
+        break;
+      }
+    }
+
+    if (rowIndex === -1) {
+      return { ok: false, msg: 'Materia no encontrada' };
+    }
+
+    var row = subjectsData[rowIndex - 1];
+    var assignmentType = data.assignmentType || 'Titular';
+
+    // Validaciones
+    if (assignmentType === 'Suplente') {
+      if (!data.startDate || !data.endDate) {
+        return { ok: false, msg: 'Las asignaciones de suplente requieren fecha de inicio y fin' };
+      }
+
+      var start = new Date(data.startDate);
+      var end = new Date(data.endDate);
+
+      if (end <= start) {
+        return { ok: false, msg: 'La fecha de fin debe ser posterior a la fecha de inicio' };
+      }
+    }
+
+    // Obtener información del docente
+    var userSheet = ss.getSheetByName(USERS_SHEET_NAME);
+    var usersData = userSheet.getDataRange().getValues();
+    var teacherName = '';
+
+    for (var i = 1; i < usersData.length; i++) {
+      if (String(usersData[i][0]) === String(data.teacherDni)) {
+        teacherName = usersData[i][1] + ' ' + usersData[i][2];
+        break;
+      }
+    }
+
+    // Guardar en historial antes de modificar
+    saveAssignmentHistory(data.subjectId, row[4], row[7], row[8], row[9], 'Reemplazado');
+
+    if (assignmentType === 'Suplente') {
+      // Guardar titular actual como backup
+      var currentTeacherDNI = row[4];
+      var currentTeacherName = row[5] || '';
+
+      // Si no hay nombre en col F, buscarlo
+      if (!currentTeacherName && currentTeacherDNI) {
+        for (var i = 1; i < usersData.length; i++) {
+          if (String(usersData[i][0]) === String(currentTeacherDNI)) {
+            currentTeacherName = usersData[i][1] + ' ' + usersData[i][2];
+            break;
+          }
+        }
+      }
+
+      // Actualizar con suplente
+      sheet.getRange(rowIndex, 5).setValue(data.teacherDni); // FK_Docente
+      sheet.getRange(rowIndex, 8).setValue('Suplente'); // Tipo_Asignacion
+      sheet.getRange(rowIndex, 9).setValue(new Date(data.startDate)); // Fecha_Inicio
+      sheet.getRange(rowIndex, 10).setValue(new Date(data.endDate)); // Fecha_Fin
+      sheet.getRange(rowIndex, 11).setValue(currentTeacherDNI); // Docente_Titular_DNI
+      sheet.getRange(rowIndex, 12).setValue(currentTeacherName); // Docente_Titular_Nombre
+
+      // Crear trigger automático para revertir en la fecha de fin
+      createReversionTrigger(data.subjectId, new Date(data.endDate));
+
+    } else {
+      // Titular o Provisional: limpiar campos de suplente
+      sheet.getRange(rowIndex, 5).setValue(data.teacherDni); // FK_Docente
+      sheet.getRange(rowIndex, 8).setValue(assignmentType); // Tipo_Asignacion
+      sheet.getRange(rowIndex, 9).setValue(new Date()); // Fecha_Inicio
+      sheet.getRange(rowIndex, 10).setValue(''); // Fecha_Fin (vacío)
+      sheet.getRange(rowIndex, 11).setValue(''); // Docente_Titular_DNI (vacío)
+      sheet.getRange(rowIndex, 12).setValue(''); // Docente_Titular_Nombre (vacío)
+    }
+
+    // Guardar nuevo en historial
+    saveAssignmentHistory(data.subjectId, data.teacherDni, assignmentType, data.startDate, data.endDate, 'Asignado');
+
+    return { ok: true, msg: 'Docente asignado correctamente' };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al asignar docente: ' + e.toString() };
+  }
+}
+
+// Mantener función legacy para compatibilidad
+function assignTeacherToSubject(subjectId, teacherDni) {
+  return updateSubjectTeacher({
+    subjectId: subjectId,
+    teacherDni: teacherDni,
+    assignmentType: 'Titular'
+  });
+}
+function sendInvitationEmail(email, collegeName) {
+  try {
+    if (!email || email.indexOf('@') === -1) {
+      return { ok: false, msg: 'Email inválido' };
+    }
+
+    var subject = 'Invitación a unirte a EscuelApp - ' + collegeName;
+    var htmlBody =
+      '<div style="font-family: Arial, sans-serif; color: #333;">' +
+      '<h2 style="color: #4A90E2;">¡Hola!</h2>' +
+      '<p>El colegio <strong>' + collegeName + '</strong> te está invitando a formar parte de su comunidad digital en <strong>EscuelApp</strong>.</p>' +
+      '<p>Con EscuelApp podrás gestionar tus actividades escolares, ver calificaciones, asistencia y mucho más.</p>' +
+      '<div style="text-align: center; margin: 30px 0;">' +
+      '<a href="https://play.google.com/store/apps/details?id=com.escuelapp" style="background-color: #4A90E2; color: white; padding: 15px 25px; text-decoration: none; border-radius: 5px; font-weight: bold;">Descargar App</a>' +
+      '</div>' +
+      '<p>Si el botón no funciona, busca "EscuelApp" en Google Play Store.</p>' +
+      '<p>¡Te esperamos!</p>' +
+      '</div>';
+
+    MailApp.sendEmail({
+      to: email,
+      subject: subject,
+      htmlBody: htmlBody
+    });
+
+    return { ok: true, msg: 'Invitación enviada correctamente' };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al enviar invitación: ' + e.toString() };
+  }
+}
+
+// ==========================================
+// NUEVA FUNCIÓN: getCollegeStaff
+// ==========================================
+function getCollegeStaff(collegeId) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var staffSheet = ss.getSheetByName('Personal_Colegios');
+    var userSheet = ss.getSheetByName(USERS_SHEET_NAME);
+
+    if (!staffSheet || !userSheet) return { ok: true, staff: [] };
+
+    var staffData = staffSheet.getDataRange().getValues();
+    var userData = userSheet.getDataRange().getValues();
+
+    // Crear mapa de usuarios para búsqueda rápida
+    var userMap = {};
+    for (var i = 1; i < userData.length; i++) {
+      userMap[String(userData[i][0])] = {
+        nombre: userData[i][1],
+        apellido: userData[i][2],
+        email: userData[i][3]
+      };
+    }
+
+    var staffList = [];
+    for (var i = 1; i < staffData.length; i++) {
+      // Col 1: DNI_Usuario, Col 2: ID_Colegio
+      if (String(staffData[i][2]) === String(collegeId)) {
+        var dni = String(staffData[i][1]);
+        var userInfo = userMap[dni] || { nombre: 'Desconocido', apellido: '', email: '' };
+
+        staffList.push({
+          id: staffData[i][0],
+          dni: dni,
+          nombre: userInfo.nombre,
+          apellido: userInfo.apellido,
+          email: userInfo.email,
+          roles: staffData[i][3], // Col 3: Roles
+          activo: staffData[i][4]
+        });
+      }
+    }
+
+    return { ok: true, staff: staffList };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al obtener personal: ' + e.toString() };
+  }
+}
+
+// ==========================================
+// NUEVA FUNCIÓN: deleteCollegeStaff
+// ==========================================
+function deleteCollegeStaff(collegeId, userId) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var staffSheet = ss.getSheetByName('Personal_Colegios');
+    if (!staffSheet) return { ok: false, msg: 'Hoja de personal no encontrada' };
+
+    var data = staffSheet.getDataRange().getValues();
+
+    for (var i = 1; i < data.length; i++) {
+      // Col 1: DNI_Usuario, Col 2: ID_Colegio
+      if (String(data[i][1]) === String(userId) && String(data[i][2]) === String(collegeId)) {
+        // Baja lógica: poner Activo (Col E / índice 4) en FALSE
+        staffSheet.getRange(i + 1, 5).setValue(false);
+        return { ok: true, msg: 'Personal eliminado correctamente' };
+      }
+    }
+
+    return { ok: false, msg: 'Personal no encontrado en este colegio' };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al eliminar personal: ' + e.toString() };
+  }
+}
+
+// ==========================================
+// STUDENT MANAGEMENT - CRUD
+// ==========================================
+
+function createStudent(data) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName('Alumnos');
+
+    if (!sheet) {
+      // Crear hoja si no existe
+      sheet = ss.insertSheet('Alumnos');
+      sheet.appendRow([
+        'pk_alumno', 'dni', 'nombre', 'apellido', 'fecha_nacimiento',
+        'fk_colegio', 'curso', 'division', 'condicion', 'activo'
+      ]);
+    }
+
+    // Validar DNI único
+    var alumnosData = sheet.getDataRange().getValues();
+    for (var i = 1; i < alumnosData.length; i++) {
+      if (String(alumnosData[i][0]) === String(data.dni)) {
+        return { ok: false, msg: 'Ya existe un alumno con ese DNI' };
+      }
+    }
+
+    var newId = data.dni; // Usar DNI como pk_alumno
+
+    // Format date to only include date part (no time)
+    var fechaNacimiento = '';
+    if (data.fechaNacimiento) {
+      var date = new Date(data.fechaNacimiento);
+      fechaNacimiento = Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    }
+
+    sheet.appendRow([
+      newId,                                    // A: pk_alumno (DNI)
+      String(data.dni || ''),                   // B: dni
+      String(data.nombre || ''),                // C: nombre
+      String(data.apellido || ''),              // D: apellido
+      fechaNacimiento,                          // E: fecha_nacimiento (solo fecha)
+      String(data.collegeId || ''),             // F: fk_colegio
+      String(data.anio || ''),                  // G: curso (ej: QUINTO)
+      String(data.division || ''),              // H: division
+      String(data.condicion || 'CURSA'),        // I: condicion (CURSA por defecto)
+      true                                      // J: activo (TRUE por defecto)
+    ]);
+
+    // ✨ AUTO-INSCRIPCIÓN EN MATERIAS (solo si condición es CURSA)
+    var condicion = String(data.condicion || 'CURSA');
+    if (condicion === 'CURSA') {
+      var materiasSheet = ss.getSheetByName('Materias');
+      if (materiasSheet) {
+        var materiasData = materiasSheet.getDataRange().getValues();
+        var inscripcionesSheet = ss.getSheetByName('Inscripciones');
+
+        if (!inscripcionesSheet) {
+          inscripcionesSheet = ss.insertSheet('Inscripciones');
+          inscripcionesSheet.appendRow([
+            'pk_inscripcion', 'fk_alumno', 'fk_materia', 'fk_colegio',
+            'year', 'condicion', 'fecha_inscripcion', 'activo'
+          ]);
+        }
+
+        var currentYear = new Date().getFullYear();
+        var enrolledCount = 0;
+
+        // Buscar materias que coincidan con el curso del alumno
+        for (var i = 1; i < materiasData.length; i++) {
+          var materia = materiasData[i];
+          var materiaCollegeId = String(materia[1]); // Col B: FK_Colegio
+          var materiaCurso = String(materia[3]);     // Col D: Curso
+          var materiaActiva = materia[6];            // Col G: Activo
+
+          // Verificar si la materia pertenece al mismo colegio y curso
+          if (materiaCollegeId === String(data.collegeId) &&
+            materiaActiva === true) {
+
+            // Comparar curso (ej: "QUINTO" con "QUINTO" o "QUINTO A")
+            var cursoAlumno = String(data.anio || '').toUpperCase().trim();
+            var cursoMateria = materiaCurso.toUpperCase().trim();
+
+            // Verificar si coincide el curso (puede ser "QUINTO" o "QUINTO A")
+            if (cursoMateria === cursoAlumno || cursoMateria.startsWith(cursoAlumno + ' ')) {
+              var pkInscripcion = Utilities.getUuid();
+
+              inscripcionesSheet.appendRow([
+                pkInscripcion,                    // pk_inscripcion
+                String(data.dni),                 // fk_alumno (DNI)
+                String(materia[0]),               // fk_materia (ID de la materia)
+                String(data.collegeId),           // fk_colegio
+                currentYear,                      // year (año lectivo actual)
+                'CURSA',                          // condicion
+                new Date(),                       // fecha_inscripcion
+                true                              // activo
+              ]);
+
+              enrolledCount++;
+            }
+          }
+        }
+
+        Logger.log('Alumno ' + data.dni + ' inscrito automáticamente en ' + enrolledCount + ' materias');
+      }
+    }
+
+    return { ok: true, msg: 'Alumno creado exitosamente', studentId: newId };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al crear alumno: ' + e.toString() };
+  }
+}
+
+function getStudents(collegeId, curso, division) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName('Alumnos');
+
+    if (!sheet) {
+      return { ok: true, students: [] };
+    }
+
+    var data = sheet.getDataRange().getValues();
+    var students = [];
+
+    // NUEVA ESTRUCTURA: A=pk_alumno, B=dni, C=nombre, D=apellido, E=fecha_nacimiento,
+    // F=fk_colegio, G=curso, H=division, I=condicion, J=activo
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+
+      // Filtrar por colegio y solo activos
+      if (String(row[5]) === String(collegeId) && row[9] === true) {
+        students.push({
+          pk_alumno: row[0], // A: pk_alumno (DNI)
+          id: row[0],        // Fallback ID
+          dni: row[1],       // B: dni
+          nombre: row[2],    // C: nombre
+          apellido: row[3],  // D: apellido
+          email: '',         // No guardamos email en nueva estructura
+          fechaNacimiento: row[4] || '', // E: fecha_nacimiento
+          domicilio: '',     // No guardamos domicilio en nueva estructura
+          partido: '',       // No guardamos partido en nueva estructura
+          localidad: '',     // No guardamos localidad en nueva estructura
+          fkColegio: row[5], // F: fk_colegio
+          fkPadre: '',       // No guardamos fk_padre en nueva estructura
+          anio: row[6] || '', // G: curso
+          division: row[7] || '', // H: division
+          condicion: row[8] || '' // I: condicion
+        });
+      }
+    }
+
+    return { ok: true, students: students };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al obtener alumnos: ' + e.toString() };
+  }
+}
+
+function getStudentDetail(studentId) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName('Alumnos');
+
+    if (!sheet) {
+      return { ok: false, msg: 'Hoja de alumnos no encontrada' };
+    }
+
+    var data = sheet.getDataRange().getValues();
+
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      if (String(row[0]) === String(studentId)) {
+        return {
+          ok: true,
+          student: {
+            dni: row[0],
+            nombre: row[1],
+            apellido: row[2],
+            email: row[3] || '',
+            fechaNacimiento: row[4] || '',
+            domicilio: row[5] || '',
+            partido: row[6] || '',
+            localidad: row[7] || '',
+            fkColegio: row[8],
+            fkColegio: row[8],
+            fkPadre: row[9] || '',
+            anio: row[10] || '',
+            division: row[11] || '',
+            condicion: row[12] || ''
+          }
+        };
+      }
+    }
+
+    return { ok: false, msg: 'Alumno no encontrado' };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al obtener detalle: ' + e.toString() };
+  }
+}
+
+function updateStudent(studentId, data, dni) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName('Alumnos');
+
+    if (!sheet) {
+      return { ok: false, msg: 'Hoja de alumnos no encontrada' };
+    }
+
+    var alumnosData = sheet.getDataRange().getValues();
+    var rowIndex = -1;
+
+    // Try to find by studentId first, then by DNI
+    var searchId = studentId || dni;
+    if (!searchId) return { ok: false, msg: 'Falta ID o DNI del alumno' };
+
+    for (var i = 1; i < alumnosData.length; i++) {
+      // Check both ID (Col A) and DNI (Col A)
+      if (String(alumnosData[i][0]) === String(searchId)) {
+        rowIndex = i + 1; // +1 para índice de sheet
+        break;
+      }
+    }
+
+    if (rowIndex === -1) {
+      return { ok: false, msg: 'Alumno no encontrado' };
+    }
+
+    // IMPORTANT: data might be undefined if params are passed differently
+    // Check if data is actually defined, otherwise return error
+    if (!data || typeof data !== 'object') {
+      return { ok: false, msg: 'Datos de actualización inválidos' };
+    }
+
+    // Actualizar campos
+    if (data.nombre !== undefined) sheet.getRange(rowIndex, 3).setValue(data.nombre); // Col C
+    if (data.apellido !== undefined) sheet.getRange(rowIndex, 4).setValue(data.apellido); // Col D
+    // Fecha Nacimiento Col E (5)
+    if (data.fechaNacimiento !== undefined) {
+      sheet.getRange(rowIndex, 5).setValue(data.fechaNacimiento ? new Date(data.fechaNacimiento) : '');
+    }
+    // Curso Col G (7)
+    if (data.anio !== undefined) sheet.getRange(rowIndex, 7).setValue(data.anio);
+    // Division Col H (8)
+    if (data.division !== undefined) sheet.getRange(rowIndex, 8).setValue(data.division);
+    // Condicion Col I (9)
+    if (data.condicion !== undefined) sheet.getRange(rowIndex, 9).setValue(data.condicion);
+    
+    return { ok: true, msg: 'Alumno actualizado correctamente' };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al actualizar alumno: ' + e.toString() };
+  }
+}
+
+function enrollStudentsInNewSubject(params) {
+  try {
+    var subjectId = params.subjectId;
+    var curso = params.curso;
+    var collegeId = params.collegeId;
+
+    if (!subjectId || !curso || !collegeId) {
+      return { ok: false, msg: 'Faltan datos para la inscripción automática' };
+    }
+
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+
+    // 1. Get Students
+    var studentsSheet = ss.getSheetByName('Alumnos');
+    if (!studentsSheet) return { ok: false, msg: 'Hoja Alumnos no encontrada' };
+    var studentsData = studentsSheet.getDataRange().getValues();
+
+    // 2. Get/Create Enrollments Sheet
+    var enrollSheet = ss.getSheetByName('Inscripciones');
+    if (!enrollSheet) {
+      enrollSheet = ss.insertSheet('Inscripciones');
+      enrollSheet.appendRow([
+        'pk_inscripcion', 'fk_alumno', 'fk_materia', 'fk_colegio', 
+        'year', 'condicion', 'fecha_inscripcion', 'activo'
+      ]);
+    }
+
+    var count = 0;
+    var fecha = new Date();
+    var currentYear = new Date().getFullYear();
+    var materiaCurso = String(curso).toUpperCase().trim();
+    
+    // Get existing enrollments to prevent duplicates
+    var enrollData = enrollSheet.getDataRange().getValues();
+
+    // Loop through students
+    for (var i = 1; i < studentsData.length; i++) {
+      var row = studentsData[i];
+      // Check College, Course, and Condition 'CURSA'
+      // Col F (5) = College, Col G (6) = Curso, Col I (8) = Condicion, Col J (9) = Activo
+      
+      var alumnoCollegeId = String(row[5]);
+      var alumnoCurso = String(row[6]);
+      var alumnoCondicion = String(row[8]);
+      var alumnoActivo = row[9];
+      
+      // Convertir activo a boolean si es string
+      if (typeof alumnoActivo === 'string') {
+        alumnoActivo = (alumnoActivo.toLowerCase() === 'true');
+      }
+
+      if (alumnoCollegeId === String(collegeId) &&
+          alumnoActivo === true &&
+          alumnoCondicion === 'CURSA') {
+          
+        // Comparar curso
+        var cursoAlumnoNorm = alumnoCurso.toUpperCase().trim();
+        
+        if (materiaCurso === cursoAlumnoNorm || materiaCurso.startsWith(cursoAlumnoNorm + ' ')) {
+          var studentDni = row[0];
+          
+          // Check if already enrolled
+          var isEnrolled = false;
+          for (var k = 1; k < enrollData.length; k++) {
+             // Col B (1) = fk_alumno, Col C (2) = fk_materia
+             if (String(enrollData[k][1]) === String(studentDni) && String(enrollData[k][2]) === String(subjectId)) {
+               isEnrolled = true;
+               break;
+             }
+          }
+          
+          if (!isEnrolled) {
+            // Add enrollment
+            var pk_inscripcion = Utilities.getUuid();
+            enrollSheet.appendRow([
+              pk_inscripcion, 
+              studentDni, 
+              subjectId, 
+              String(collegeId),
+              currentYear,
+              'CURSA', 
+              fecha, 
+              true
+            ]);
+            count++;
+          }
+        }
+      }
+    }
+
+    return { ok: true, msg: 'Se inscribieron ' + count + ' alumnos automáticamente', enrolledCount: count };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error en enrollStudentsInNewSubject: ' + e.toString() };
+  }
+}
+
+
+
+function getStudentSubjects(studentId) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var enrollSheet = ss.getSheetByName('Inscripciones');
+
+    if (!enrollSheet) {
+      return { ok: true, subjects: [] };
+    }
+
+    var enrollData = enrollSheet.getDataRange().getValues();
+    var subjectsSheet = ss.getSheetByName('Materias');
+
+    if (!subjectsSheet) {
+      return { ok: true, subjects: [] };
+    }
+
+    var subjectsData = subjectsSheet.getDataRange().getValues();
+    var subjectMap = {};
+
+    // Build subject map for quick lookup
+    for (var i = 1; i < subjectsData.length; i++) {
+      subjectMap[String(subjectsData[i][0])] = {
+        id: subjectsData[i][0],
+        nombre: subjectsData[i][2],
+        anio: subjectsData[i][3],
+        curso: subjectsData[i][3],
+        horario: subjectsData[i][5] || ''
+      };
+    }
+
+    var subjects = [];
+
+    // NUEVA ESTRUCTURA DE INSCRIPCIONES:
+    // A: pk_inscripcion, B: fk_alumno, C: fk_materia, D: fk_colegio, 
+    // E: year, F: condicion, G: fecha_inscripcion, H: activo
+    for (var i = 1; i < enrollData.length; i++) {
+      var row = enrollData[i];
+      // Col B (1) = fk_alumno, Col C (2) = fk_materia, Col F (5) = condicion, Col H (7) = activo
+      if (String(row[1]) === String(studentId) && row[7] === true) {
+        var subjectId = String(row[2]);
+        var subject = subjectMap[subjectId];
+
+        if (subject) {
+          subjects.push({
+            id: subject.id,
+            inscripcionId: row[0], // pk_inscripcion for unique key
+            nombre: subject.nombre,
+            anio: subject.anio,
+            curso: subject.curso,
+            horario: subject.horario,
+            condicion: row[5] || 'CURSA' // Col F
+          });
+        }
+      }
+    }
+
+    return { ok: true, subjects: subjects };
+
+  } catch (e) {
+    Logger.log('Error en getStudentSubjects: ' + e.toString());
+    return { ok: false, msg: 'Error al obtener materias del alumno: ' + e.toString() };
+  }
+}
+
+function addStudentSubject(studentId, subjectId, condicion) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var enrollSheet = ss.getSheetByName('Inscripciones');
+
+    if (!enrollSheet) {
+      enrollSheet = ss.insertSheet('Inscripciones');
+      enrollSheet.appendRow([
+        'pk_inscripcion', 'fk_alumno', 'fk_materia', 'fk_colegio',
+        'year', 'condicion', 'fecha_inscripcion', 'activo'
+      ]);
+    }
+
+    // Get student's college from Alumnos sheet
+    var alumnosSheet = ss.getSheetByName('Alumnos');
+    var fkColegio = null;
+    if (alumnosSheet) {
+      var alumnosData = alumnosSheet.getDataRange().getValues();
+      for (var j = 1; j < alumnosData.length; j++) {
+        if (String(alumnosData[j][0]) === String(studentId)) {
+          fkColegio = alumnosData[j][5]; // Col F: fk_colegio
+          break;
+        }
+      }
+    }
+
+    // Check if already enrolled
+    var enrollData = enrollSheet.getDataRange().getValues();
+    for (var i = 1; i < enrollData.length; i++) {
+      // Col B (1) = fk_alumno, Col C (2) = fk_materia
+      if (String(enrollData[i][1]) === String(studentId) && String(enrollData[i][2]) === String(subjectId)) {
+        // Update existing enrollment: Col F (5) = condicion, Col H (7) = activo
+        enrollSheet.getRange(i + 1, 6).setValue(condicion || 'RECURSA');
+        enrollSheet.getRange(i + 1, 8).setValue(true);
+        return { ok: true, msg: 'Materia actualizada' };
+      }
+    }
+
+    // Add new enrollment with updated structure
+    var pk_inscripcion = Utilities.getUuid();
+    var currentYear = new Date().getFullYear();
+    var fecha = new Date();
+
+    enrollSheet.appendRow([
+      pk_inscripcion,           // A: pk_inscripcion
+      studentId,                // B: fk_alumno
+      subjectId,                // C: fk_materia
+      fkColegio || '',          // D: fk_colegio
+      currentYear,              // E: year
+      condicion || 'RECURSA',   // F: condicion
+      fecha,                    // G: fecha_inscripcion
+      true                      // H: activo
+    ]);
+
+    return { ok: true, msg: 'Materia agregada correctamente' };
+
+  } catch (e) {
+    Logger.log('Error en addStudentSubject: ' + e.toString());
+    return { ok: false, msg: 'Error al agregar materia: ' + e.toString() };
+  }
+}
+
+function removeStudentSubject(studentId, subjectId) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var enrollSheet = ss.getSheetByName('Inscripciones');
+
+    if (!enrollSheet) {
+      return { ok: false, msg: 'Hoja de inscripciones no encontrada' };
+    }
+
+    var enrollData = enrollSheet.getDataRange().getValues();
+
+    // NUEVA ESTRUCTURA: B=fk_alumno, C=fk_materia, H=activo
+    for (var i = 1; i < enrollData.length; i++) {
+      // Col B (1) = fk_alumno, Col C (2) = fk_materia
+      if (String(enrollData[i][1]) === String(studentId) && String(enrollData[i][2]) === String(subjectId)) {
+        // Soft delete: set Activo (Col H / índice 7) to false
+        enrollSheet.getRange(i + 1, 8).setValue(false);
+        return { ok: true, msg: 'Materia eliminada correctamente' };
+      }
+    }
+
+    return { ok: false, msg: 'Inscripción no encontrada' };
+
+  } catch (e) {
+    Logger.log('Error en removeStudentSubject: ' + e.toString());
+    return { ok: false, msg: 'Error al eliminar materia: ' + e.toString() };
+  }
+}
+
+function enrollStudentInSubjects(studentDni, curso, collegeId) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+
+    // 1. Get all subjects for this course and college
+    var subjectsSheet = ss.getSheetByName('Materias');
+    if (!subjectsSheet) {
+      return { ok: false, msg: 'Hoja de Materias no encontrada' };
+    }
+
+    var subjectsData = subjectsSheet.getDataRange().getValues();
+    var matchingSubjects = [];
+
+    // Find subjects that match the course and college
+    for (var i = 1; i < subjectsData.length; i++) {
+      var row = subjectsData[i];
+      // Col B (1) = FK_Colegio, Col D (3) = Curso, Col G (6) = Activo
+      if (String(row[1]) === String(collegeId) && String(row[3]) === String(curso) && row[6] === true) {
+        matchingSubjects.push(row[0]); // Col A (0) = ID
+      }
+    }
+
+    if (matchingSubjects.length === 0) {
+      return { ok: true, msg: 'No hay materias disponibles para este curso', enrolledCount: 0 };
+    }
+
+    // 2. Get/Create Enrollments Sheet
+    var enrollSheet = ss.getSheetByName('Inscripciones');
+    if (!enrollSheet) {
+      enrollSheet = ss.insertSheet('Inscripciones');
+      enrollSheet.appendRow(['ID', 'DNI_Alumno', 'ID_Materia', 'Condicion', 'Fecha', 'Activo']);
+    }
+
+    var count = 0;
+    var fecha = new Date();
+
+    // 3. Enroll student in each subject
+    for (var j = 0; j < matchingSubjects.length; j++) {
+      var subjectId = matchingSubjects[j];
+
+      // Check if already enrolled
+      var enrollData = enrollSheet.getDataRange().getValues();
+      var alreadyEnrolled = false;
+
+      for (var k = 1; k < enrollData.length; k++) {
+        if (String(enrollData[k][1]) === String(studentDni) && String(enrollData[k][2]) === String(subjectId)) {
+          alreadyEnrolled = true;
+          break;
+        }
+      }
+
+      if (!alreadyEnrolled) {
+        var pk_inscripcion = Utilities.getUuid();
+        enrollSheet.appendRow([pk_inscripcion, studentDni, subjectId, 'CURSA', fecha, true]);
+        count++;
+      }
+    }
+
+    return { ok: true, msg: 'Alumno inscrito en ' + count + ' materias', enrolledCount: count };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error en inscripción automática: ' + e.toString() };
+  }
+}
+
+// ==========================================
+// NUEVA FUNCIÓN: updateCollegeStaffRole
+// ==========================================
+function updateCollegeStaffRole(collegeId, userId, newRoles) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var staffSheet = ss.getSheetByName('Personal_Colegios');
+    if (!staffSheet) return { ok: false, msg: 'Hoja de personal no encontrada' };
+
+    var data = staffSheet.getDataRange().getValues();
+
+    for (var i = 1; i < data.length; i++) {
+      // Col 1: DNI_Usuario, Col 2: ID_Colegio
+      if (String(data[i][1]) === String(userId) && String(data[i][2]) === String(collegeId)) {
+        // Actualizar Roles (Col D / índice 3)
+        staffSheet.getRange(i + 1, 4).setValue(newRoles);
+        return { ok: true, msg: 'Roles actualizados correctamente' };
+      }
+    }
+
+    return { ok: false, msg: 'Personal no encontrado en este colegio' };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al actualizar roles: ' + e.toString() };
+  }
+}
+
+// ==========================================
+// ASSIGNMENT HISTORY TRACKING
+// ==========================================
+function saveAssignmentHistory(subjectId, teacherDni, assignmentType, startDate, endDate, action) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var historySheet = ss.getSheetByName('Historial_Asignaciones');
+
+    if (!historySheet) {
+      historySheet = ss.insertSheet('Historial_Asignaciones');
+      historySheet.appendRow(['ID', 'ID_Materia', 'DNI_Docente', 'Tipo_Asignacion', 'Fecha_Inicio', 'Fecha_Fin', 'Accion', 'Timestamp']);
+    }
+
+    var historyId = Utilities.getUuid();
+    historySheet.appendRow([
+      historyId,
+      subjectId,
+      teacherDni,
+      assignmentType,
+      startDate || '',
+      endDate || '',
+      action,
+      new Date()
+    ]);
+
+  } catch (e) {
+    Logger.log('Error guardando historial: ' + e.toString());
+  }
+}
+
+function getSubjectAssignmentHistory(subjectId) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var historySheet = ss.getSheetByName('Historial_Asignaciones');
+
+    if (!historySheet) return { ok: true, history: [] };
+
+    var historyData = historySheet.getDataRange().getValues();
+    var history = [];
+
+    // Obtener nombres de docentes
+    var userSheet = ss.getSheetByName(USERS_SHEET_NAME);
+    var usersData = userSheet.getDataRange().getValues();
+    var userMap = {};
+
+    for (var i = 1; i < usersData.length; i++) {
+      userMap[String(usersData[i][0])] = usersData[i][1] + ' ' + usersData[i][2];
+    }
+
+    for (var i = 1; i < historyData.length; i++) {
+      if (String(historyData[i][1]) === String(subjectId)) {
+        var teacherName = userMap[String(historyData[i][2])] || 'Desconocido';
+
+        history.push({
+          id: historyData[i][0],
+          teacherDni: historyData[i][2],
+          teacherName: teacherName,
+          assignmentType: historyData[i][3],
+          startDate: historyData[i][4],
+          endDate: historyData[i][5],
+          action: historyData[i][6],
+          timestamp: historyData[i][7]
+        });
+      }
+    }
+
+    // Ordenar por timestamp descendente
+    history.sort(function (a, b) {
+      return new Date(b.timestamp) - new Date(a.timestamp);
+    });
+
+    return { ok: true, history: history };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al obtener historial: ' + e.toString() };
+  }
+}
+
+// ==========================================
+// AUTOMATIC TRIGGER MANAGEMENT
+// ==========================================
+function createReversionTrigger(subjectId, endDate) {
+  try {
+    // Eliminar triggers existentes para esta materia
+    deleteReversionTriggers(subjectId);
+
+    // Crear nuevo trigger para la fecha de fin + 1 día (para ejecutar al día siguiente)
+    var triggerDate = new Date(endDate);
+    triggerDate.setDate(triggerDate.getDate() + 1);
+    triggerDate.setHours(1, 0, 0, 0); // 1:00 AM del día siguiente
+
+    // Crear el trigger
+    ScriptApp.newTrigger('revertSpecificAssignment')
+      .timeBased()
+      .at(triggerDate)
+      .create();
+
+    // Guardar referencia del trigger en propiedades del script
+    var props = PropertiesService.getScriptProperties();
+    var triggersData = props.getProperty('REVERSION_TRIGGERS') || '{}';
+    var triggers = JSON.parse(triggersData);
+
+    // Obtener el último trigger creado (el que acabamos de crear)
+    var allTriggers = ScriptApp.getProjectTriggers();
+    var newTrigger = allTriggers[allTriggers.length - 1];
+
+    triggers[newTrigger.getUniqueId()] = {
+      subjectId: subjectId,
+      endDate: endDate.toISOString(),
+      created: new Date().toISOString()
+    };
+
+    props.setProperty('REVERSION_TRIGGERS', JSON.stringify(triggers));
+
+    Logger.log('Trigger creado para materia ' + subjectId + ' en fecha ' + triggerDate);
+
+  } catch (e) {
+    Logger.log('Error creando trigger: ' + e.toString());
+    // No fallar la asignación si el trigger falla
+  }
+}
+
+function deleteReversionTriggers(subjectId) {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var triggersData = props.getProperty('REVERSION_TRIGGERS') || '{}';
+    var triggers = JSON.parse(triggersData);
+
+    // Buscar y eliminar triggers para esta materia
+    var allTriggers = ScriptApp.getProjectTriggers();
+    for (var i = 0; i < allTriggers.length; i++) {
+      var triggerId = allTriggers[i].getUniqueId();
+      if (triggers[triggerId] && triggers[triggerId].subjectId === subjectId) {
+        ScriptApp.deleteTrigger(allTriggers[i]);
+        delete triggers[triggerId];
+        Logger.log('Trigger eliminado para materia ' + subjectId);
+      }
+    }
+
+    props.setProperty('REVERSION_TRIGGERS', JSON.stringify(triggers));
+
+  } catch (e) {
+    Logger.log('Error eliminando triggers: ' + e.toString());
+  }
+}
+
+function revertSpecificAssignment() {
+  try {
+    // Esta función es llamada por el trigger
+    // Obtener información del trigger que la llamó
+    var props = PropertiesService.getScriptProperties();
+    var triggersData = props.getProperty('REVERSION_TRIGGERS') || '{}';
+    var triggers = JSON.parse(triggersData);
+
+    // Ejecutar la reversión general (procesa todas las asignaciones vencidas)
+    var result = checkAndRevertTemporaryAssignments();
+
+    // Limpiar triggers ya ejecutados
+    cleanupExpiredTriggers();
+
+    Logger.log('Reversión automática ejecutada: ' + JSON.stringify(result));
+
+  } catch (e) {
+    Logger.log('Error en reversión automática: ' + e.toString());
+  }
+}
+
+function cleanupExpiredTriggers() {
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var triggersData = props.getProperty('REVERSION_TRIGGERS') || '{}';
+    var triggers = JSON.parse(triggersData);
+
+    var now = new Date();
+    var allTriggers = ScriptApp.getProjectTriggers();
+
+    // Eliminar triggers cuya fecha ya pasó
+    for (var i = 0; i < allTriggers.length; i++) {
+      var triggerId = allTriggers[i].getUniqueId();
+      if (triggers[triggerId]) {
+        var endDate = new Date(triggers[triggerId].endDate);
+        if (endDate < now) {
+          ScriptApp.deleteTrigger(allTriggers[i]);
+          delete triggers[triggerId];
+        }
+      }
+    }
+
+    props.setProperty('REVERSION_TRIGGERS', JSON.stringify(triggers));
+
+  } catch (e) {
+    Logger.log('Error limpiando triggers: ' + e.toString());
+  }
+}
+
+// ==========================================
+// AUTOMATIC REVERSION FOR TEMPORARY ASSIGNMENTS
+// ==========================================
+function checkAndRevertTemporaryAssignments() {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName('Materias');
+    if (!sheet) return { ok: false, msg: 'Hoja de materias no encontrada' };
+
+    var subjectsData = sheet.getDataRange().getValues();
+    var today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalizar a medianoche
+
+    var revertedCount = 0;
+
+    for (var i = 1; i < subjectsData.length; i++) {
+      var row = subjectsData[i];
+      var assignmentType = row[7];
+      var endDate = row[9];
+
+      // Solo procesar suplentes con fecha de fin
+      if (assignmentType === 'Suplente' && endDate) {
+        var end = new Date(endDate);
+        end.setHours(0, 0, 0, 0);
+
+        // Si la fecha de fin ya pasó
+        if (end <= today) {
+          var titularDNI = row[10];
+          var titularName = row[11];
+
+          if (titularDNI) {
+            // Guardar en historial
+            saveAssignmentHistory(row[0], row[4], 'Suplente', row[8], row[9], 'Finalizado');
+
+            // Revertir al titular
+            var rowIndex = i + 1;
+            sheet.getRange(rowIndex, 5).setValue(titularDNI); // FK_Docente
+            sheet.getRange(rowIndex, 8).setValue('Titular'); // Tipo_Asignacion
+            sheet.getRange(rowIndex, 9).setValue(new Date()); // Fecha_Inicio
+            sheet.getRange(rowIndex, 10).setValue(''); // Fecha_Fin
+            sheet.getRange(rowIndex, 11).setValue(''); // Docente_Titular_DNI
+            sheet.getRange(rowIndex, 12).setValue(''); // Docente_Titular_Nombre
+
+            // Guardar en historial
+            saveAssignmentHistory(row[0], titularDNI, 'Titular', new Date(), '', 'Revertido automáticamente');
+
+            revertedCount++;
+          }
+        }
+      }
+    }
+
+    Logger.log('Reversiones automáticas completadas: ' + revertedCount);
+    return { ok: true, msg: 'Se revirtieron ' + revertedCount + ' asignaciones temporales', count: revertedCount };
+
+  } catch (e) {
+    Logger.log('Error en reversión automática: ' + e.toString());
+    return { ok: false, msg: 'Error en reversión automática: ' + e.toString() };
+  }
+}
+
+function getSubjectDetail(subjectId) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName('Materias');
+    if (!sheet) return { ok: false, msg: 'Hoja de materias no encontrada' };
+
+    var subjectsData = sheet.getDataRange().getValues();
+
+    // Obtener mapa de docentes
+    var userSheet = ss.getSheetByName(USERS_SHEET_NAME);
+    var usersData = userSheet.getDataRange().getValues();
+    var userMap = {};
+
+    for (var i = 1; i < usersData.length; i++) {
+      userMap[String(usersData[i][0])] = {
+        nombre: usersData[i][1],
+        apellido: usersData[i][2]
+      };
+    }
+
+    for (var i = 1; i < subjectsData.length; i++) {
+      var row = subjectsData[i];
+      if (String(row[0]) === String(subjectId)) {
+        var docenteInfo = userMap[String(row[4])] || null;
+        var titularInfo = userMap[String(row[10])] || null;
+
+        return {
+          ok: true,
+          subject: {
+            id: row[0],
+            collegeId: row[1],
+            nombre: row[2],
+            curso: row[3],
+            fk_docente: row[4],
+            docenteNombre: docenteInfo ? (docenteInfo.nombre + ' ' + docenteInfo.apellido) : 'Sin asignar',
+            horario: row[5],
+            activo: row[6],
+            tipoAsignacion: row[7] || 'Titular',
+            fechaInicio: row[8] || '',
+            fechaFin: row[9] || '',
+            docenteTitularDNI: row[10] || '',
+            docenteTitularNombre: titularInfo ? (titularInfo.nombre + ' ' + titularInfo.apellido) : (row[11] || '')
+          }
+        };
+      }
+    }
+
+    return { ok: false, msg: 'Materia no encontrada' };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al obtener detalle: ' + e.toString() };
+  }
+}
+
+/**
+ * CÓDIGO PARA AGREGAR AL ARCHIVO PRINCIPAL DE GOOGLE APPS SCRIPT (codigo.gs)
+ * 
+ * Este código implementa el sistema de recuperación de contraseña con:
+ * - Verificación por DNI
+ * - Códigos temporales de 6 dígitos
+ * - Envío de emails
+ * - Expiración de códigos (15 minutos)
+ */
+
+// ============================================================================
+// ENDPOINT 1: Solicitar recuperación de contraseña
+// ============================================================================
+
+function requestPasswordReset(dni) {
+  try {
+    dni = (dni || '').toString().trim();
+
+    if (!dni || dni.length !== 8) {
+      return { ok: false, msg: 'DNI inválido. Debe tener 8 dígitos.' };
+    }
+
+    // Buscar usuario por DNI en la hoja de usuarios
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(USERS_SHEET_NAME);
+    if (!sheet) return { ok: false, msg: 'Hoja de usuarios no encontrada' };
+
+    var values = sheet.getDataRange().getValues();
+
+    var userRow = null;
+    var userRowIndex = -1;
+
+    for (var i = 1; i < values.length; i++) {
+      var rowDni = (values[i][0] || '').toString().trim();
+      if (rowDni === dni) {
+        userRow = values[i];
+        userRowIndex = i + 1;
+        break;
+      }
+    }
+
+    if (!userRow) {
+      return { ok: false, msg: 'DNI no encontrado en el sistema.' };
+    }
+
+    // Obtener email del usuario (Columna 3 = índice 3)
+    var email = (userRow[3] || '').toString().trim();
+
+    if (!email) {
+      return { ok: false, msg: 'El usuario no tiene un correo electrónico registrado.' };
+    }
+
+    // Generar código de 6 dígitos
+    var code = generateVerificationCode();
+
+    // Guardar código temporal con timestamp
+    saveResetCode(dni, code);
+
+    // Intentar enviar email (no bloqueante)
+    var emailSent = false;
+    try {
+      emailSent = sendResetCodeEmail(email, code, userRow[1], userRow[2]);
+    } catch (emailError) {
+      Logger.log('Error al enviar email (no bloqueante): ' + emailError);
+    }
+
+    // TEMPORAL: Para debugging, también guardar el código en los logs
+    Logger.log('CÓDIGO DE RECUPERACIÓN GENERADO PARA DNI ' + dni + ': ' + code);
+
+    return {
+      ok: true,
+      msg: emailSent
+        ? 'Código de verificación enviado a tu correo electrónico.'
+        : 'Código generado. Revisa los logs del Apps Script para obtenerlo (email no enviado).',
+      email: email,
+      // TEMPORAL: Para testing, devolver el código (ELIMINAR EN PRODUCCIÓN)
+      debugCode: code
+    };
+
+  } catch (error) {
+    Logger.log('Error en requestPasswordReset: ' + error);
+    return { ok: false, msg: 'Error al procesar la solicitud: ' + error.toString() };
+  }
+}
+
+// ============================================================================
+// ENDPOINT 2: Verificar código de recuperación
+// ============================================================================
+
+/**
+ * Verifica que el código de recuperación sea válido y no haya expirado
+ * @param {string} dni - DNI del usuario
+ * @param {string} code - Código de 6 dígitos
+ * @returns {object} { ok: boolean, msg?: string }
+ */
+function verifyResetCode(dni, code) {
+  try {
+    dni = (dni || '').toString().trim();
+    code = (code || '').toString().trim();
+
+    if (!dni || !code) {
+      return { ok: false, msg: 'DNI y código son requeridos.' };
+    }
+
+    if (code.length !== 6) {
+      return { ok: false, msg: 'El código debe tener 6 dígitos.' };
+    }
+
+    // Obtener código guardado
+    var savedData = getResetCode(dni);
+
+    if (!savedData) {
+      return { ok: false, msg: 'No hay una solicitud de recuperación activa para este DNI.' };
+    }
+
+    // Verificar que el código coincida
+    if (savedData.code !== code) {
+      return { ok: false, msg: 'Código incorrecto.' };
+    }
+
+    // Verificar que no haya expirado (15 minutos = 900000 ms)
+    var now = new Date().getTime();
+    var elapsed = now - savedData.timestamp;
+    var FIFTEEN_MINUTES = 15 * 60 * 1000;
+
+    if (elapsed > FIFTEEN_MINUTES) {
+      // Eliminar código expirado
+      deleteResetCode(dni);
+      return { ok: false, msg: 'El código ha expirado. Por favor, solicita uno nuevo.' };
+    }
+
+    return { ok: true };
+
+  } catch (error) {
+    Logger.log('Error en verifyResetCode: ' + error);
+    return { ok: false, msg: 'Error al verificar el código: ' + error.toString() };
+  }
+}
+
+// ============================================================================
+// ENDPOINT 3: Restablecer contraseña
+// ============================================================================
+
+/**
+ * Restablece la contraseña del usuario
+ * @param {string} dni - DNI del usuario
+ * @param {string} code - Código de verificación
+ * @param {string} newPassword - Nueva contraseña
+ * @returns {object} { ok: boolean, msg: string }
+ */
+function resetPassword(dni, code, newPassword) {
+  try {
+    dni = (dni || '').toString().trim();
+    code = (code || '').toString().trim();
+    newPassword = (newPassword || '').toString();
+
+    if (!dni || !code || !newPassword) {
+      return { ok: false, msg: 'Todos los campos son requeridos.' };
+    }
+
+    // Verificar código nuevamente (seguridad adicional)
+    var verifyResult = verifyResetCode(dni, code);
+    if (!verifyResult.ok) {
+      return verifyResult;
+    }
+
+    // Validar requisitos de contraseña
+    if (newPassword.length < 8 || newPassword.length > 15) {
+      return { ok: false, msg: 'La contraseña debe tener entre 8 y 15 caracteres.' };
+    }
+
+    if (!/[A-Z]/.test(newPassword)) {
+      return { ok: false, msg: 'La contraseña debe contener al menos una mayúscula.' };
+    }
+
+    if (!/[a-z]/.test(newPassword)) {
+      return { ok: false, msg: 'La contraseña debe contener al menos una minúscula.' };
+    }
+
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(newPassword)) {
+      return { ok: false, msg: 'La contraseña debe contener al menos un símbolo especial.' };
+    }
+
+    // Buscar usuario por DNI
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(USERS_SHEET_NAME);
+    if (!sheet) return { ok: false, msg: 'Hoja de usuarios no encontrada' };
+
+    var values = sheet.getDataRange().getValues();
+
+    var userRowIndex = -1;
+
+    for (var i = 1; i < values.length; i++) {
+      var rowDni = (values[i][0] || '').toString().trim();
+      if (rowDni === dni) {
+        userRowIndex = i + 1; // +1 porque las filas en Sheets son 1-indexed
+        break;
+      }
+    }
+
+    if (userRowIndex === -1) {
+      return { ok: false, msg: 'Usuario no encontrado.' };
+    }
+
+    // Hashear la nueva contraseña usando el mismo método que en login
+    var salt = generateSalt();
+    var hashedPassword = hashWithSalt(newPassword, salt);
+    var passwordToStore = salt + ':' + hashedPassword;
+
+    // Actualizar contraseña en la hoja (Columna 10 = índice 9 + 1)
+    sheet.getRange(userRowIndex, 10).setValue(passwordToStore);
+
+    // Eliminar código usado
+    deleteResetCode(dni);
+
+    return { ok: true, msg: 'Contraseña actualizada exitosamente.' };
+
+  } catch (error) {
+    Logger.log('Error en resetPassword: ' + error);
+    return { ok: false, msg: 'Error al restablecer la contraseña: ' + error.toString() };
+  }
+}
+
+// ============================================================================
+// FUNCIONES AUXILIARES
+// ============================================================================
+
+/**
+ * Genera un código de verificación de 6 dígitos
+ * @returns {string} Código de 6 dígitos
+ */
+function generateVerificationCode() {
+  var code = '';
+  for (var i = 0; i < 6; i++) {
+    code += Math.floor(Math.random() * 10).toString();
+  }
+  return code;
+}
+
+/**
+ * Guarda el código de recuperación con timestamp
+ * Usa PropertiesService para almacenamiento temporal
+ * @param {string} dni - DNI del usuario
+ * @param {string} code - Código de verificación
+ */
+function saveResetCode(dni, code) {
+  var props = PropertiesService.getScriptProperties();
+  var key = 'RESET_' + dni;
+  var data = {
+    code: code,
+    timestamp: new Date().getTime()
+  };
+  props.setProperty(key, JSON.stringify(data));
+}
+
+/**
+ * Obtiene el código de recuperación guardado
+ * @param {string} dni - DNI del usuario
+ * @returns {object|null} { code: string, timestamp: number } o null
+ */
+function getResetCode(dni) {
+  var props = PropertiesService.getScriptProperties();
+  var key = 'RESET_' + dni;
+  var dataStr = props.getProperty(key);
+
+  if (!dataStr) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(dataStr);
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Elimina el código de recuperación
+ * @param {string} dni - DNI del usuario
+ */
+function deleteResetCode(dni) {
+  var props = PropertiesService.getScriptProperties();
+  var key = 'RESET_' + dni;
+  props.deleteProperty(key);
+}
+
+/**
+ * Envía email con el código de verificación
+ * @param {string} email - Email del destinatario
+ * @param {string} code - Código de verificación
+ * @param {string} nombre - Nombre del usuario
+ * @param {string} apellido - Apellido del usuario
+ * @returns {boolean} true si se envió exitosamente
+ */
+function sendResetCodeEmail(email, code, nombre, apellido) {
+  try {
+    // Validar que todos los parámetros existan
+    if (!email || !code || !nombre || !apellido) {
+      Logger.log('Parámetros faltantes en sendResetCodeEmail');
+      return false;
+    }
+
+    var subject = 'Código de recuperación de contraseña - EscuelApp';
+
+    // Versión simplificada del HTML
+    var htmlBody =
+      '<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">' +
+      '  <h2 style="color: #4A90E2;">Recuperación de contraseña</h2>' +
+      '  <p>Hola ' + nombre + ' ' + apellido + ',</p>' +
+      '  <p>Has solicitado restablecer tu contraseña en EscuelApp.</p>' +
+      '  <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">' +
+      '    <p style="margin: 0; font-size: 14px; color: #666;">Tu código de verificación es:</p>' +
+      '    <h1 style="margin: 10px 0; color: #4A90E2; font-size: 36px; letter-spacing: 8px;">' + code + '</h1>' +
+      '  </div>' +
+      '  <p style="color: #666; font-size: 14px;">Este código es válido por <strong>15 minutos</strong>.</p>' +
+      '  <p style="color: #666; font-size: 14px;">Si no solicitaste este cambio, ignora este correo.</p>' +
+      '  <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">' +
+      '  <p style="color: #999; font-size: 12px;">Saludos,<br>Equipo EscuelApp</p>' +
+      '</div>';
+
+    var plainBody =
+      'Hola ' + nombre + ' ' + apellido + ',\n\n' +
+      'Has solicitado restablecer tu contraseña en EscuelApp.\n\n' +
+      'Tu código de verificación es: ' + code + '\n\n' +
+      'Este código es válido por 15 minutos.\n\n' +
+      'Si no solicitaste este cambio, ignora este correo.\n\n' +
+      'Saludos,\n' +
+      'Equipo EscuelApp';
+
+    // Intentar enviar email
+    Logger.log('Intentando enviar email a: ' + email);
+
+    MailApp.sendEmail({
+      to: email,
+      subject: subject,
+      body: plainBody,
+      htmlBody: htmlBody
+    });
+
+    Logger.log('Email enviado exitosamente a: ' + email);
+    return true;
+
+  } catch (error) {
+    Logger.log('Error al enviar email: ' + error.toString());
+    Logger.log('Stack trace: ' + error.stack);
+    return false;
+  }
+}
+
+/**
+ * Función de hashing de contraseña (debe coincidir con la usada en login)
+ * IMPORTANTE: Reemplazar con la función de hash que uses en tu código actual
+ * @param {string} password - Contraseña en texto plano
+ * @returns {string} Contraseña hasheada
+ */
+function hashPassword(password) {
+  // IMPORTANTE: Reemplazar con tu función de hash actual
+  // Este es un ejemplo usando SHA-256
+  var hash = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, password);
+  var hashString = '';
+  for (var i = 0; i < hash.length; i++) {
+    var byte = hash[i];
+    if (byte < 0) byte += 256;
+    var byteString = byte.toString(16);
+    if (byteString.length == 1) byteString = '0' + byteString;
+    hashString += byteString;
+  }
+  return hashString;
+}
+
+/**
+ * ==========================================
+ * NUEVA FUNCIÓN: doGet (Para manejar aprobaciones por email)
+ * ==========================================
+ */
+function doGet(e) {
+  var output = ContentService.createTextOutput();
+
+  if (!e || !e.parameter) {
+    return output.setContent('Parámetros inválidos.');
+  }
+
+  var action = e.parameter.action;
+  var id = e.parameter.id;
+  var token = e.parameter.token;
+
+  if (action === 'approveCollege') {
+    var result = approveCollege(id, token);
+    return HtmlService.createHtmlOutput(result.msg);
+  } else if (action === 'rejectCollege') {
+    var result = rejectCollege(id, token);
+    return HtmlService.createHtmlOutput(result.msg);
+  }
+
+  return output.setContent('Acción desconocida.');
+}
+
+/**
+ * ==========================================
+ * NUEVA FUNCIÓN: registerCollege
+ * ==========================================
+ */
+function registerCollege(data) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(COLEGIOS_SHEET_NAME);
+
+    // Crear hoja si no existe
+    if (!sheet) {
+      sheet = ss.insertSheet(COLEGIOS_SHEET_NAME);
+      // Encabezados (SIN datos de contacto personal, solo institucional)
+      sheet.appendRow([
+        'pk_colegio', 'tipo', 'nombre', 'direccion', 'partido', 'localidad',
+        'cue', 'telefono', 'email', 'activo', 'approval_token'
+      ]);
+    }
+
+    // VALIDACIÓN DE CUE DUPLICADO
+    var existingData = sheet.getDataRange().getValues();
+    // Empezamos de 1 para saltar encabezado
+    for (var i = 1; i < existingData.length; i++) {
+      var rowCue = String(existingData[i][6] || '').trim(); // Columna G = índice 6
+      if (rowCue === String(data.cue).trim()) {
+        return { ok: false, msg: 'El CUE ingresado (' + data.cue + ') ya se encuentra registrado.' };
+      }
+    }
+
+    // Generar ID Consecutivo
+    var lastRow = sheet.getLastRow();
+    var pk_colegio = 1; // Default si es la primera fila de datos
+
+    if (lastRow > 1) {
+      var lastId = sheet.getRange(lastRow, 1).getValue();
+      if (!isNaN(lastId)) {
+        pk_colegio = Number(lastId) + 1;
+      }
+    }
+
+    var approvalToken = Utilities.getUuid();
+
+    // Guardar SOLO datos institucionales
+    var newRow = [
+      pk_colegio,               // A
+      data.tipo,                // B
+      data.nombreColegio,       // C
+      data.direccion,           // D
+      data.partido,             // E
+      data.localidad,           // F
+      data.cue,                 // G
+      data.telefono,            // H
+      data.emailColegio,        // I
+      false,                    // J (Activo: FALSE por defecto)
+      approvalToken             // K (Token seguridad)
+    ];
+
+    sheet.appendRow(newRow);
+
+    // Enviar Email al Admin con TODOS los datos (Institucionales + Contacto)
+    sendAdminApprovalEmail(data, pk_colegio, approvalToken);
+
+    // Enviar Email al Solicitante (usando el email de contacto provisto en el formulario)
+    sendRequesterConfirmationEmail(data);
+
+    return { ok: true, msg: 'Solicitud recibida correctamente.' };
+
+  } catch (e) {
+    return { ok: false, msg: 'Error al registrar colegio: ' + e.toString() };
+  }
+}
+
+/**
+ * ==========================================
+ * NUEVA FUNCIÓN: approveCollege
+ * ==========================================
+ */
+function approveCollege(pk_colegio, token) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(COLEGIOS_SHEET_NAME);
+    if (!sheet) return { ok: false, msg: 'Error: Hoja de colegios no encontrada.' };
+
+    var data = sheet.getDataRange().getValues();
+    var foundRowIndex = -1;
+    var colegioData = null;
+
+    Logger.log('--- DEBUG APPROVE COLLEGE ---');
+    Logger.log('ID buscado: ' + pk_colegio);
+    Logger.log('Token recibido: ' + token);
+
+    // Buscar colegio por ID (Columna A = índice 0)
+    for (var i = 1; i < data.length; i++) {
+      // Logger.log('Fila ' + i + ' ID: ' + data[i][0]); 
+      if (String(data[i][0]) === String(pk_colegio)) {
+        Logger.log('ID Encontrado en fila: ' + (i + 1));
+
+        var storedToken = String(data[i][10]).trim();
+        var receivedToken = String(token).trim();
+
+        Logger.log('Token almacenado: "' + storedToken + '"');
+        Logger.log('Token recibido: "' + receivedToken + '"');
+        Logger.log('Match? ' + (storedToken === receivedToken));
+
+        // Verificar token (Columna K = índice 10) - CON TRIM
+        if (storedToken !== receivedToken) {
+          return {
+            ok: false,
+            msg: '<h1>Error de Seguridad</h1>' +
+              '<p>El token de aprobación es inválido.</p>' +
+              '<p><small>Debug Info:</small></p>' +
+              '<p><small>Recibido: ' + receivedToken + '</small></p>' +
+              '<p><small>Esperado: ' + storedToken + '</small></p>'
+          };
+        }
+        foundRowIndex = i + 1;
+        colegioData = data[i];
+        break;
+      }
+    }
+
+    if (foundRowIndex === -1) {
+      return { ok: false, msg: '<h1>Error</h1><p>Colegio no encontrado (ID: ' + pk_colegio + ').</p>' };
+    }
+
+    // Actualizar estado a TRUE (Columna J = índice 9)
+    sheet.getRange(foundRowIndex, 10).setValue(true);
+
+    // Enviar email de bienvenida SOLO al email institucional (Columna I = índice 8)
+    if (colegioData[8]) {
+      sendWelcomeEmail(colegioData[8], colegioData[2]);
+    }
+
+    return { ok: true, msg: getHtmlMessage('¡Colegio Aprobado!', 'El colegio <strong>' + colegioData[2] + '</strong> ha sido dado de alta exitosamente.') };
+
+  } catch (e) {
+    return { ok: false, msg: getHtmlMessage('Error', e.toString()) };
+  }
+}
+
+/**
+ * ==========================================
+ * NUEVA FUNCIÓN: rejectCollege
+ * ==========================================
+ */
+function rejectCollege(pk_colegio, token) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(COLEGIOS_SHEET_NAME);
+    if (!sheet) return { ok: false, msg: 'Error: Hoja de colegios no encontrada.' };
+
+    var data = sheet.getDataRange().getValues();
+    var foundRowIndex = -1;
+    var colegioData = null;
+
+    // Buscar colegio por ID (Columna A = índice 0)
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(pk_colegio)) {
+        // Verificar token (Columna K = índice 10) - CON TRIM
+        if (String(data[i][10]).trim() !== String(token).trim()) {
+          return { ok: false, msg: '<h1>Error de Seguridad</h1><p>El token de aprobación es inválido.</p>' };
+        }
+        foundRowIndex = i + 1;
+        colegioData = data[i];
+        break;
+      }
+    }
+
+    if (foundRowIndex === -1) {
+      return { ok: false, msg: '<h1>Error</h1><p>Colegio no encontrado.</p>' };
+    }
+
+    // Notificar rechazo al email institucional (Columna I = índice 8)
+    if (colegioData[8]) {
+      sendRejectionEmail(colegioData[8], colegioData[2]);
+    }
+
+    // ELIMINAR FILA
+    sheet.deleteRow(foundRowIndex);
+
+    return { ok: true, msg: getHtmlMessage('Solicitud Rechazada', 'La solicitud ha sido rechazada y el registro eliminado.') };
+
+  } catch (e) {
+    return { ok: false, msg: getHtmlMessage('Error', e.toString()) };
+  }
+}
+
+/**
+ * ==========================================
+ * HELPERS DE EMAIL
+ * ==========================================
+ */
+
+function getEmailTemplate(title, content) {
+  return `
+    <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4; padding: 40px 0;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+            
+            <!-- Header -->
+            <div style="background-color: #4A90E2; padding: 30px; text-align: center;">
+                <img src="${LOGO_URL}" alt="EscuelApp Logo" style="width: 80px; height: 80px; border-radius: 50%; background-color: white; padding: 5px; margin-bottom: 10px;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 300;">EscuelApp</h1>
+            </div>
+
+            <!-- Body -->
+            <div style="padding: 40px;">
+                <h2 style="color: #333333; margin-top: 0; margin-bottom: 20px; font-size: 20px; text-align: center;">${title}</h2>
+                <div style="color: #555555; line-height: 1.6; font-size: 16px;">
+                    ${content}
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div style="background-color: #333333; padding: 20px; text-align: center;">
+                <p style="color: #aaaaaa; margin: 0; font-size: 14px;">Equipo de EscuelApp</p>
+                <p style="color: #666666; margin: 10px 0 0; font-size: 12px;">&copy; ${new Date().getFullYear()} EscuelApp. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </div>
+    `;
+}
+
+function getHtmlMessage(title, message) {
+  // Versión simplificada para mostrar en el navegador tras aprobar/rechazar
+  return `
+        <div style="font-family: sans-serif; text-align: center; padding: 50px;">
+            <h1 style="color: #4A90E2;">${title}</h1>
+            <p style="font-size: 18px; color: #555;">${message}</p>
+        </div>
+    `;
+}
+
+function sendAdminApprovalEmail(data, id, token) {
+  var scriptUrl = ScriptApp.getService().getUrl();
+  var approveLink = scriptUrl + '?action=approveCollege&id=' + id + '&token=' + token;
+  var rejectLink = scriptUrl + '?action=rejectCollege&id=' + id + '&token=' + token;
+
+  var content = `
+    <p>Se ha recibido una nueva solicitud de registro. Por favor, revisa los datos a continuación:</p>
+    
+    <div style="background-color: #f9f9f9; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #4A90E2;">
+        <h3 style="margin-top: 0; color: #4A90E2;">🏫 Datos Institucionales</h3>
+        <p><strong>Nombre:</strong> ${data.nombreColegio}</p>
+        <p><strong>Tipo:</strong> ${data.tipo}</p>
+        <p><strong>CUE:</strong> ${data.cue}</p>
+        <p><strong>Dirección:</strong> ${data.direccion}</p>
+        <p><strong>Ubicación:</strong> ${data.localidad}, ${data.partido}</p>
+        <p><strong>Teléfono:</strong> ${data.telefono}</p>
+        <p><strong>Email:</strong> <a href="mailto:${data.emailColegio}">${data.emailColegio}</a></p>
+    </div>
+
+    <div style="background-color: #f9f9f9; padding: 20px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #66BB6A;">
+        <h3 style="margin-top: 0; color: #66BB6A;">👤 Datos del Solicitante</h3>
+        <p><strong>Nombre:</strong> ${data.nombreContacto} ${data.apellidoContacto}</p>
+        <p><strong>Celular:</strong> ${data.celularContacto}</p>
+        <p><strong>Email:</strong> <a href="mailto:${data.emailContacto}">${data.emailContacto}</a></p>
+    </div>
+
+    <div style="text-align: center; margin-top: 30px;">
+        <a href="${approveLink}" style="background-color: #2E7D32; color: white; padding: 15px 30px; text-decoration: none; border-radius: 50px; font-weight: bold; margin-right: 15px; display: inline-block;">✅ APROBAR</a>
+        <a href="${rejectLink}" style="background-color: #C62828; color: white; padding: 15px 30px; text-decoration: none; border-radius: 50px; font-weight: bold; display: inline-block;">❌ RECHAZAR</a>
+    </div>
+  `;
+
+  MailApp.sendEmail({
+    to: ADMIN_EMAIL,
+    subject: '🔔 Nueva Solicitud: ' + data.nombreColegio,
+    htmlBody: getEmailTemplate('Nueva Solicitud de Registro', content)
+  });
+}
+
+function sendRequesterConfirmationEmail(data) {
+  var content = `
+    <p>Hola <strong>${data.nombreContacto}</strong>,</p>
+    <p>Hemos recibido exitosamente la solicitud de registro para <strong>${data.nombreColegio}</strong>.</p>
+    <p>Nuestro equipo analizará la información provista. Una vez aprobada la solicitud, recibirás las credenciales de acceso en la casilla institucional:</p>
+    <p style="text-align: center; font-weight: bold; color: #4A90E2;">${data.emailColegio}</p>
+    <p>Muchas gracias por confiar en nosotros.</p>
+  `;
+
+  MailApp.sendEmail({
+    to: data.emailContacto,
+    subject: 'Solicitud Recibida - EscuelApp',
+    htmlBody: getEmailTemplate('¡Solicitud en Proceso!', content)
+  });
+}
+
+function sendWelcomeEmail(email, nombreColegio) {
+  var content = `
+    <p>¡Tenemos excelentes noticias!</p>
+    <p>El colegio <strong>${nombreColegio}</strong> ha sido dado de alta exitosamente en nuestra plataforma.</p>
+    <p>A partir de este momento, pueden comenzar a gestionar su institución de manera digital.</p>
+    <div style="text-align: center; margin-top: 30px;">
+        <a href="#" style="background-color: #4A90E2; color: white; padding: 15px 30px; text-decoration: none; border-radius: 50px; font-weight: bold; display: inline-block;">INGRESAR AHORA</a>
+    </div>
+  `;
+
+  MailApp.sendEmail({
+    to: email,
+    subject: '¡Bienvenidos a EscuelApp! 🚀',
+    htmlBody: getEmailTemplate('¡Alta Exitosa!', content)
+  });
+}
+
+function sendRejectionEmail(email, nombreColegio) {
+  var content = `
+    <p>Estimados,</p>
+    <p>Lamentamos informarles que la solicitud de registro para el colegio <strong>${nombreColegio}</strong> ha sido rechazada.</p>
+    <p>Si consideran que esto es un error, por favor pónganse en contacto con nuestro soporte.</p>
+  `;
+
+  MailApp.sendEmail({
+    to: email,
+    subject: 'Estado de Solicitud - EscuelApp',
+    htmlBody: getEmailTemplate('Solicitud Rechazada', content)
+  });
+}
+
+// ==========================================
+// NUEVAS FUNCIONES: Inscripciones, Calendario, Notificaciones, ConfigUI
+// ==========================================
+
+function enrollStudent(data) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName('Inscripciones');
+    if (!sheet) return { ok: false, msg: 'Hoja Inscripciones no encontrada' };
+
+    // data: { dni_alumno, pk_materia, condicion, activo }
+    // Validar si ya existe inscripción para ese alumno y materia
+    var values = sheet.getDataRange().getValues();
+    var foundIndex = -1;
+
+    for (var i = 1; i < values.length; i++) {
+      if (String(values[i][1]) === String(data.dni_alumno) && String(values[i][2]) === String(data.pk_materia)) {
+        foundIndex = i + 1;
+        break;
+      }
+    }
+
+    if (foundIndex > 0) {
+      // Actualizar
+      sheet.getRange(foundIndex, 4).setValue(data.condicion); // Condicion
+      sheet.getRange(foundIndex, 6).setValue(data.activo);    // Activo
+      return { ok: true, msg: 'Inscripción actualizada' };
+    } else {
+      // Crear
+      var pk_inscripcion = sheet.getLastRow(); // Simple ID generation
+      var fecha = new Date();
+      sheet.appendRow([pk_inscripcion, data.dni_alumno, data.pk_materia, data.condicion, fecha, data.activo]);
+      return { ok: true, msg: 'Inscripción creada' };
+    }
+  } catch (e) {
+    return { ok: false, msg: 'Error en enrollStudent: ' + e.toString() };
+  }
+}
+
+function getStudentEnrollments(studentDni) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName('Inscripciones');
+    if (!sheet) return { ok: true, enrollments: [] };
+
+    var values = sheet.getDataRange().getValues();
+    var enrollments = [];
+
+    for (var i = 1; i < values.length; i++) {
+      if (String(values[i][1]) === String(studentDni) && values[i][5] === true) {
+        enrollments.push({
+          pk_inscripcion: values[i][0],
+          dni_alumno: values[i][1],
+          pk_materia: values[i][2],
+          condicion: values[i][3],
+          fecha_inscripcion: values[i][4]
+        });
+      }
+    }
+    return { ok: true, enrollments: enrollments };
+  } catch (e) {
+    return { ok: false, msg: 'Error en getStudentEnrollments: ' + e.toString() };
+  }
+}
+
+function getCalendar(collegeId) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName('CalendarioCalificaciones');
+    if (!sheet) return { ok: true, events: [] };
+
+    var values = sheet.getDataRange().getValues();
+    var events = [];
+
+    for (var i = 1; i < values.length; i++) {
+      if (String(values[i][1]) === String(collegeId) && values[i][7] === true) {
+        events.push({
+          pk_calendario: values[i][0],
+          fk_colegio: values[i][1],
+          fecha_inicio: values[i][2],
+          fecha_fin: values[i][3],
+          descripcion: values[i][4],
+          creado_por: values[i][5],
+          fecha_creacion: values[i][6]
+        });
+      }
+    }
+    return { ok: true, events: events };
+  } catch (e) {
+    return { ok: false, msg: 'Error en getCalendar: ' + e.toString() };
+  }
+}
+
+function saveCalendarEvent(data) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName('CalendarioCalificaciones');
+    if (!sheet) return { ok: false, msg: 'Hoja CalendarioCalificaciones no encontrada' };
+
+    if (data.pk_calendario) {
+      // Update
+      var values = sheet.getDataRange().getValues();
+      for (var i = 1; i < values.length; i++) {
+        if (String(values[i][0]) === String(data.pk_calendario)) {
+          sheet.getRange(i + 1, 3).setValue(data.fecha_inicio);
+          sheet.getRange(i + 1, 4).setValue(data.fecha_fin);
+          sheet.getRange(i + 1, 5).setValue(data.descripcion);
+          sheet.getRange(i + 1, 8).setValue(data.activo);
+          return { ok: true, msg: 'Evento actualizado' };
+        }
+      }
+      return { ok: false, msg: 'Evento no encontrado' };
+    } else {
+      // Create
+      var pk_calendario = sheet.getLastRow();
+      var fecha_creacion = new Date();
+      sheet.appendRow([pk_calendario, data.fk_colegio, data.fecha_inicio, data.fecha_fin, data.descripcion, data.creado_por, fecha_creacion, true]);
+      return { ok: true, msg: 'Evento creado' };
+    }
+  } catch (e) {
+    return { ok: false, msg: 'Error en saveCalendarEvent: ' + e.toString() };
+  }
+}
+
+function getNotifications(userDni) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName('Notificaciones');
+    if (!sheet) return { ok: true, notifications: [] };
+
+    var values = sheet.getDataRange().getValues();
+    var notifications = [];
+
+    for (var i = 1; i < values.length; i++) {
+      if (String(values[i][1]) === String(userDni) && values[i][5] === false) { // Solo no leídas
+        notifications.push({
+          pk_notificacion: values[i][0],
+          dni_usuario: values[i][1],
+          tipo: values[i][2],
+          mensaje: values[i][3],
+          fecha: values[i][4],
+          leida: values[i][5],
+          fk_referencia: values[i][6]
+        });
+      }
+    }
+    return { ok: true, notifications: notifications };
+  } catch (e) {
+    return { ok: false, msg: 'Error en getNotifications: ' + e.toString() };
+  }
+}
+
+function markNotificationRead(notificationId) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName('Notificaciones');
+    if (!sheet) return { ok: false, msg: 'Hoja Notificaciones no encontrada' };
+
+    var values = sheet.getDataRange().getValues();
+    for (var i = 1; i < values.length; i++) {
+      if (String(values[i][0]) === String(notificationId)) {
+        sheet.getRange(i + 1, 6).setValue(true); // Marcar como leída
+        return { ok: true, msg: 'Notificación marcada como leída' };
+      }
+    }
+    return { ok: false, msg: 'Notificación no encontrada' };
+  } catch (e) {
+    return { ok: false, msg: 'Error en markNotificationRead: ' + e.toString() };
+  }
+}
+
+function getUIConfig(userDni) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName('ConfiguracionUI');
+    if (!sheet) return { ok: true, config: null };
+
+    var values = sheet.getDataRange().getValues();
+    for (var i = 1; i < values.length; i++) {
+      if (String(values[i][0]) === String(userDni)) {
+        return {
+          ok: true,
+          config: {
+            iconos_visibles: values[i][1],
+            orden_iconos: values[i][2]
+          }
+        };
+      }
+    }
+    return { ok: true, config: null }; // No config found, use defaults
+  } catch (e) {
+    return { ok: false, msg: 'Error en getUIConfig: ' + e.toString() };
+  }
+}
+
+function saveUIConfig(userDni, config) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName('ConfiguracionUI');
+    if (!sheet) return { ok: false, msg: 'Hoja ConfiguracionUI no encontrada' };
+
+    var values = sheet.getDataRange().getValues();
+    var foundIndex = -1;
+
+    for (var i = 1; i < values.length; i++) {
+      if (String(values[i][0]) === String(userDni)) {
+        foundIndex = i + 1;
+        break;
+      }
+    }
+
+    var fecha = new Date();
+    var iconosJson = JSON.stringify(config.iconos_visibles);
+    var ordenJson = JSON.stringify(config.orden_iconos);
+
+    if (foundIndex > 0) {
+      // Update
+      sheet.getRange(foundIndex, 2).setValue(iconosJson);
+      sheet.getRange(foundIndex, 3).setValue(ordenJson);
+      sheet.getRange(foundIndex, 4).setValue(fecha);
+      return { ok: true, msg: 'Configuración actualizada' };
+    } else {
+      // Create
+      sheet.appendRow([userDni, iconosJson, ordenJson, fecha]);
+      return { ok: true, msg: 'Configuración guardada' };
+    }
+  } catch (e) {
+    return { ok: false, msg: 'Error en saveUIConfig: ' + e.toString() };
+  }
+}
+
+
+// Agregar esta función después de removeStudentSubject (alrededor de la línea 1900)
+
+function getAlumnosMateria(curso, materia, collegeId) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+
+    // 1. Buscar la materia por nombre y curso
+    var materiasSheet = ss.getSheetByName('Materias');
+    if (!materiasSheet) {
+      return { ok: false, msg: 'Hoja de Materias no encontrada' };
+    }
+    var materiasData = materiasSheet.getDataRange().getValues();
+    var materiaId = null;
+    for (var i = 1; i < materiasData.length; i++) {
+      var row = materiasData[i];
+      // Col B (1) = FK_Colegio, Col C (2) = Nombre, Col D (3) = Curso
+      if (String(row[1]) === String(collegeId) &&
+        String(row[2]).toUpperCase() === String(materia).toUpperCase() &&
+        String(row[3]).toUpperCase() === String(curso).toUpperCase()) {
+        materiaId = row[0]; // Col A = ID
+        break;
+      }
+    }
+    if (!materiaId) {
+      return { ok: true, alumnos: [] }; // Materia no encontrada, devolver lista vacía
+    }
+    // 2. Buscar inscripciones activas para esta materia
+    var inscripcionesSheet = ss.getSheetByName('Inscripciones');
+    if (!inscripcionesSheet) {
+      return { ok: true, alumnos: [] };
+    }
+    var inscripcionesData = inscripcionesSheet.getDataRange().getValues();
+    var alumnosDnis = [];
+    // ESTRUCTURA INSCRIPCIONES: A=pk_inscripcion, B=fk_alumno, C=fk_materia, 
+    // D=fk_colegio, E=year, F=condicion, G=fecha_inscripcion, H=activo
+    for (var i = 1; i < inscripcionesData.length; i++) {
+      var row = inscripcionesData[i];
+      // Col C (2) = fk_materia, Col H (7) = activo
+      if (String(row[2]) === String(materiaId) && row[7] === true) {
+        alumnosDnis.push(String(row[1])); // Col B = fk_alumno (DNI)
+      }
+    }
+    if (alumnosDnis.length === 0) {
+      return { ok: true, alumnos: [] };
+    }
+    // 3. Obtener datos completos de los alumnos
+    var alumnosSheet = ss.getSheetByName('Alumnos');
+    if (!alumnosSheet) {
+      return { ok: false, msg: 'Hoja de Alumnos no encontrada' };
+    }
+    var alumnosData = alumnosSheet.getDataRange().getValues();
+    var alumnos = [];
+    // ESTRUCTURA ALUMNOS: A=pk_alumno, B=dni, C=nombre, D=apellido, 
+    // E=fecha_nacimiento, F=fk_colegio, G=curso, H=division, I=condicion, J=activo
+    for (var i = 1; i < alumnosData.length; i++) {
+      var row = alumnosData[i];
+      var alumnoDni = String(row[0]); // Col A = pk_alumno (DNI)
+
+      // Verificar si este alumno está en la lista de inscritos
+      if (alumnosDnis.indexOf(alumnoDni) !== -1 && row[9] === true) { // Col J = activo
+        alumnos.push({
+          id: alumnoDni,
+          dni: String(row[1]),           // Col B
+          nombre: String(row[2] || ''),  // Col C
+          apellido: String(row[3] || ''),// Col D
+          promedio: null // TODO: Calcular promedio si existe tabla de calificaciones
+        });
+      }
+    }
+    // Ordenar por apellido
+    alumnos.sort(function (a, b) {
+      return a.apellido.localeCompare(b.apellido);
+    });
+    return { ok: true, alumnos: alumnos };
+  } catch (e) { Logger.log('Error en getAlumnosMateria: ' + e.toString()); return { ok: false, msg: 'Error al obtener alumnos de la materia: ' + e.toString() }; }
+}
+
+
+function getSubjectStudents(subjectId) {
+  try {
+    if (!subjectId) return { ok: false, msg: 'Falta ID de materia' };
+
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    
+    // 1. Buscar inscripciones activas para esta materia
+    var inscripcionesSheet = ss.getSheetByName('Inscripciones');
+    if (!inscripcionesSheet) {
+      return { ok: true, students: [] };
+    }
+    
+    var inscripcionesData = inscripcionesSheet.getDataRange().getValues();
+    var alumnosMap = {}; // Map DNI -> Inscripcion Info
+    
+    // ESTRUCTURA INSCRIPCIONES: A=pk_inscripcion, B=fk_alumno, C=fk_materia, 
+    // D=fk_colegio, E=year, F=condicion, G=fecha_inscripcion, H=activo
+    for (var i = 1; i < inscripcionesData.length; i++) {
+      var row = inscripcionesData[i];
+      // Col C (2) = fk_materia, Col H (7) = activo
+      if (String(row[2]) === String(subjectId) && row[7] === true) {
+        var dni = String(row[1]);
+        alumnosMap[dni] = {
+          pk_inscripcion: row[0],
+          condicion: row[5]
+        };
+      }
+    }
+    
+    var dnis = Object.keys(alumnosMap);
+    if (dnis.length === 0) {
+      return { ok: true, students: [] };
+    }
+    
+    // 2. Obtener datos completos de los alumnos
+    var alumnosSheet = ss.getSheetByName('Alumnos');
+    if (!alumnosSheet) {
+      return { ok: false, msg: 'Hoja de Alumnos no encontrada' };
+    }
+    
+    var alumnosData = alumnosSheet.getDataRange().getValues();
+    var students = [];
+    
+    // ESTRUCTURA ALUMNOS: A=pk_alumno, B=dni, C=nombre, D=apellido, 
+    // E=fecha_nacimiento, F=fk_colegio, G=curso, H=division, I=condicion, J=activo
+    for (var i = 1; i < alumnosData.length; i++) {
+      var row = alumnosData[i];
+      var alumnoDni = String(row[0]); // Col A = pk_alumno (DNI)
+      
+      if (alumnosMap[alumnoDni] && row[9] === true) { // Si está inscrito y activo
+        var inscripcion = alumnosMap[alumnoDni];
+        students.push({
+          id: alumnoDni,
+          pk_inscripcion: inscripcion.pk_inscripcion,
+          dni: String(row[1]),           // Col B
+          nombre: String(row[2] || ''),  // Col C
+          apellido: String(row[3] || ''),// Col D
+          curso: String(row[6] || ''),   // Col G
+          division: String(row[7] || ''),// Col H
+          condicion: inscripcion.condicion // Condición de la inscripción (CURSA, RECURSA, etc)
+        });
+      }
+    }
+    
+    // Ordenar por apellido
+    students.sort(function(a, b) {
+      return a.apellido.localeCompare(b.apellido);
+    });
+    
+    return { ok: true, students: students };
+    
+  } catch (e) {
+    return { ok: false, msg: 'Error al obtener alumnos de la materia: ' + e.toString() };
+  }
+}
