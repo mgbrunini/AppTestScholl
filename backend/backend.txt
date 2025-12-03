@@ -442,8 +442,8 @@ function login(user, pass) {
         if (isValid) {
           var token = Utilities.getUuid();
           var userInfo = {
-            pk_usuario: row[0],        // DNI
-            dni: row[0],               // DNI (duplicado para consistencia)
+            pk_usuario: String(row[0]).trim(),        // DNI (trimmed)
+            dni: String(row[0]).trim(),               // DNI (duplicado para consistencia)
             usuario: email,
             nombre: row[1],
             apellido: row[2],
@@ -604,7 +604,7 @@ function getProfesorMaterias(token, collegeId) {
   var user = getSession(token);
   if (!user) return { ok: false, msg: 'Sesión expirada' };
 
-  var colegioId = collegeId ? String(collegeId) : String(user.fk_colegio);
+  var colegioId = collegeId ? String(collegeId).trim() : String(user.fk_colegio).trim();
 
   try {
     var ss = SpreadsheetApp.openById(SHEET_ID);
@@ -623,7 +623,7 @@ function getProfesorMaterias(token, collegeId) {
       var row = data[i];
 
       // Verificar que sea del colegio correcto, esté activa y el docente sea el usuario actual
-      if (String(row[1]) === colegioId && row[6] === true && String(row[4]) === String(user.pk_usuario)) {
+      if (String(row[1]).trim() === colegioId && row[6] === true && String(row[4]).trim() === String(user.pk_usuario).trim()) {
         materias.push({
           id: row[0],
           materia: row[2],
