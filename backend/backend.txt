@@ -1484,6 +1484,53 @@ function deleteCollegeStaff(collegeId, userId) {
 // STUDENT MANAGEMENT - CRUD
 // ==========================================
 
+function normalizeCursoToNumber(curso) {
+  var map = {
+    '1ro': 1, 'PRIMERO': 1,
+    '2do': 2, 'SEGUNDO': 2,
+    '3ro': 3, 'TERCERO': 3,
+    '4to': 4, 'CUARTO': 4,
+    '5to': 5, 'QUINTO': 5,
+    '6to': 6, 'SEXTO': 6,
+    '7mo': 7, 'SÉPTIMO': 7, 'SEPTIMO': 7
+  };
+  return map[String(curso).toUpperCase()] || 0;
+}
+
+function normalizeNumberToCurso(num) {
+  var map = {
+    1: 'PRIMERO',
+    2: 'SEGUNDO',
+    3: 'TERCERO',
+    4: 'CUARTO',
+    5: 'QUINTO',
+    6: 'SEXTO',
+    7: 'SÉPTIMO'
+  };
+  return map[num] || String(num);
+}
+
+function calculateCurrentCurso(storedCurso, cicloLectivo) {
+  if (!cicloLectivo) return storedCurso;
+  
+  var entryYear = parseInt(cicloLectivo);
+  var currentYear = new Date().getFullYear();
+  
+  if (isNaN(entryYear)) return storedCurso;
+  
+  var diff = currentYear - entryYear;
+  if (diff < 0) return storedCurso; // Future year? Keep stored
+  
+  var startLevel = normalizeCursoToNumber(storedCurso);
+  if (startLevel === 0) return storedCurso; // Unknown format
+  
+  var currentLevel = startLevel + diff;
+  
+  // Cap at 7th year or handle logic as needed. For now, just return calculated.
+  // If it exceeds 7, it might mean they graduated, but we'll show the calculated year.
+  return normalizeNumberToCurso(currentLevel);
+}
+
 function createStudent(data) {
   try {
     var ss = SpreadsheetApp.openById(SHEET_ID);
@@ -1494,7 +1541,7 @@ function createStudent(data) {
       sheet = ss.insertSheet('Alumnos');
       sheet.appendRow([
         'pk_alumno', 'dni', 'nombre', 'apellido', 'fecha_nacimiento',
-        'fk_colegio', 'curso', 'division', 'condicion', 'activo'
+        'fk_colegio', 'curso', 'division', 'condicion', 'activo', 'ciclo_lectivo'
       ]);
     }
 
@@ -1525,7 +1572,8 @@ function createStudent(data) {
       String(data.anio || ''),                  // G: curso (ej: QUINTO)
       String(data.division || ''),              // H: division
       String(data.condicion || 'CURSA'),        // I: condicion (CURSA por defecto)
-      true                                      // J: activo (TRUE por defecto)
+      true,                                     // J: activo (TRUE por defecto)
+      String(data.cicloLectivo || '')           // K: ciclo_lectivo
     ]);
 
     // ✨ AUTO-INSCRIPCIÓN EN MATERIAS (solo si condición es CURSA)
@@ -1559,7 +1607,9 @@ function createStudent(data) {
             materiaActiva === true) {
 
             // Comparar curso (ej: "QUINTO" con "QUINTO" o "QUINTO A")
-            var cursoAlumno = String(data.anio || '').toUpperCase().trim();
+            // ✨ FIX: Usar el curso CALCULADO para el año actual, no el histórico
+            var cursoCalculado = calculateCurrentCurso(String(data.anio || ''), String(data.cicloLectivo || ''));
+            var cursoAlumno = String(cursoCalculado).toUpperCase().trim();
             var cursoMateria = materiaCurso.toUpperCase().trim();
 
             // Verificar si coincide el curso (puede ser "QUINTO" o "QUINTO A")
@@ -1625,9 +1675,10 @@ function getStudents(collegeId, curso, division) {
           localidad: '',     // No guardamos localidad en nueva estructura
           fkColegio: row[5], // F: fk_colegio
           fkPadre: '',       // No guardamos fk_padre en nueva estructura
-          anio: row[6] || '', // G: curso
+          anio: calculateCurrentCurso(row[6] || '', row[10]), // G: curso + K: ciclo_lectivo
           division: row[7] || '', // H: division
-          condicion: row[8] || '' // I: condicion
+          condicion: row[8] || '', // I: condicion
+          cicloLectivo: row[10] || '' // K: ciclo_lectivo
         });
       }
     }
@@ -1656,20 +1707,20 @@ function getStudentDetail(studentId) {
         return {
           ok: true,
           student: {
-            dni: row[0],
-            nombre: row[1],
-            apellido: row[2],
-            email: row[3] || '',
+            dni: row[1],
+            nombre: row[2],
+            apellido: row[3],
+            email: '', // Not in Alumnos sheet
             fechaNacimiento: row[4] || '',
-            domicilio: row[5] || '',
-            partido: row[6] || '',
-            localidad: row[7] || '',
-            fkColegio: row[8],
-            fkColegio: row[8],
-            fkPadre: row[9] || '',
-            anio: row[10] || '',
-            division: row[11] || '',
-            condicion: row[12] || ''
+            domicilio: '', // Not in Alumnos sheet
+            partido: '', // Not in Alumnos sheet
+            localidad: '', // Not in Alumnos sheet
+            fkColegio: row[5],
+            fkPadre: '', // Not in Alumnos sheet
+            anio: calculateCurrentCurso(row[6] || '', row[10]), // G: curso + K: ciclo_lectivo
+            division: row[7] || '',
+            condicion: row[8] || '',
+            cicloLectivo: row[10] || ''
           }
         };
       }
@@ -1729,6 +1780,8 @@ function updateStudent(studentId, data, dni) {
     if (data.division !== undefined) sheet.getRange(rowIndex, 8).setValue(data.division);
     // Condicion Col I (9)
     if (data.condicion !== undefined) sheet.getRange(rowIndex, 9).setValue(data.condicion);
+    // Ciclo Lectivo Col K (11)
+    if (data.cicloLectivo !== undefined) sheet.getRange(rowIndex, 11).setValue(data.cicloLectivo);
     
     return { ok: true, msg: 'Alumno actualizado correctamente' };
 

@@ -1,7 +1,7 @@
 import { LoginResponse, DashboardResponse } from '../types';
 
 // TODO: El usuario deberá reemplazar esto con su URL de Web App publicada
-export const API_URL = 'https://script.google.com/macros/s/AKfycbyxWWIaCux6oZ_o2Uilho1So0CxgupbK1cfELFAqvXpxJGgEHYyVLyd6tGqeSWDKtGFgA/exec';
+export const API_URL = 'https://script.google.com/macros/s/AKfycby2GPWI5pbp3Gqb2RtoNoMmg5GCyWasiz7-p9tNTWo3_1c0pQs90wqb2BErUQK9J6RWDw/exec';
 
 export const api = {
     async post(action: string, payload: any = {}): Promise<any> {
