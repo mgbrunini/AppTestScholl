@@ -3547,3 +3547,12 @@ function getSubjectStudents(subjectId) {
     return { ok: false, msg: 'Error al obtener alumnos de la materia: ' + e.toString() };
   }
 }
+
+// ==========================================
+// NUEVA FUNCIÓN: getProtectedData
+// ==========================================
+function getProtectedData(token) {
+  var user = getSession(token);
+  if (!user) return { ok: false, msg: 'Sesión expirada' };
+  return { ok: true, data: 'Datos protegidos', user: user };
+}
