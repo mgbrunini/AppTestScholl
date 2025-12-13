@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator, Modal, TextInput, Platform, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { colors } from '../theme/colors';
@@ -7,6 +7,7 @@ import { textStyles } from '../theme/typography';
 import { spacing, borderRadius, shadows } from '../theme/spacing';
 import { api } from '../services/api';
 import { ScreenWrapper } from '../components/ScreenWrapper';
+import { PERIODOS_EVALUACION } from '../constants/gradingPeriods';
 
 export default function CalendarConfigScreen({ route, navigation }: { route: any, navigation: any }) {
     const { colegio, token, user } = route.params;
@@ -21,10 +22,21 @@ export default function CalendarConfigScreen({ route, navigation }: { route: any
 
     // Form states
     const [nombre, setNombre] = useState('');
-    const [fechaInicio, setFechaInicio] = useState(new Date());
-    const [fechaFin, setFechaFin] = useState(new Date());
+
+    // Initialize defaults
+    const defaultStart = new Date();
+    defaultStart.setHours(7, 0, 0, 0);
+
+    const defaultEnd = new Date();
+    defaultEnd.setHours(23, 59, 0, 0);
+
+    const [fechaInicio, setFechaInicio] = useState(defaultStart);
+    const [fechaFin, setFechaFin] = useState(defaultEnd);
+
     const [showStartDatePicker, setShowStartDatePicker] = useState(false);
     const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+    const [showStartTimePicker, setShowStartTimePicker] = useState(false);
+    const [showEndTimePicker, setShowEndTimePicker] = useState(false);
 
     useEffect(() => {
         loadPeriods();
@@ -35,7 +47,13 @@ export default function CalendarConfigScreen({ route, navigation }: { route: any
         try {
             const response = await api.getCalendarPeriods(colegio.pk_colegio);
             if (response.ok) {
-                setPeriods(response.data || []);
+                const mappedPeriods = (response.periods || []).map((p: any) => ({
+                    id: p.id,
+                    nombre: p.name,
+                    fechaInicio: new Date(p.startDate),
+                    fechaFin: new Date(p.endDate)
+                }));
+                setPeriods(mappedPeriods);
             } else {
                 Alert.alert('Error', response.msg || 'No se pudieron cargar los períodos');
             }
@@ -116,15 +134,24 @@ export default function CalendarConfigScreen({ route, navigation }: { route: any
         );
     };
 
+
     const resetForm = () => {
         setNombre('');
-        setFechaInicio(new Date());
-        setFechaFin(new Date());
+        const start = new Date();
+        start.setHours(7, 0, 0, 0);
+        setFechaInicio(start);
+
+        const end = new Date();
+        end.setHours(23, 59, 0, 0);
+        setFechaFin(end);
     };
 
-    const formatDate = (dateString: string | Date) => {
-        const date = new Date(dateString);
+    const formatDate = (date: Date) => {
         return date.toLocaleDateString('es-AR');
+    };
+
+    const formatTime = (date: Date) => {
+        return date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
     };
 
     const isPeriodActive = (period: any) => {
@@ -158,8 +185,10 @@ export default function CalendarConfigScreen({ route, navigation }: { route: any
         </View>
     );
 
+
     return (
         <ScreenWrapper>
+            {/* ... Header and List ... */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
@@ -206,37 +235,65 @@ export default function CalendarConfigScreen({ route, navigation }: { route: any
                         </View>
 
                         <View style={styles.formGroup}>
-                            <Text style={styles.label}>Nombre</Text>
-                            <TextInput
-                                style={styles.input}
-                                value={nombre}
-                                onChangeText={setNombre}
-                                placeholder="Ej: 1er Trimestre"
-                            />
+                            <Text style={styles.label}>Instancia de Evaluación</Text>
+                            <View style={styles.periodSelectorContainer}>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                    {Object.entries(PERIODOS_EVALUACION).map(([key, label]) => (
+                                        <TouchableOpacity
+                                            key={key}
+                                            style={[
+                                                styles.periodOption,
+                                                nombre === key && styles.periodOptionSelected
+                                            ]}
+                                            onPress={() => setNombre(key)}
+                                        >
+                                            <Text style={[
+                                                styles.periodOptionText,
+                                                nombre === key && styles.periodOptionTextSelected
+                                            ]}>
+                                                {label}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+                            </View>
                         </View>
 
-                        <View style={styles.formGroup}>
-                            <Text style={styles.label}>Fecha Inicio</Text>
-                            <TouchableOpacity
-                                style={styles.dateButton}
-                                onPress={() => setShowStartDatePicker(true)}
-                            >
-                                <Text style={styles.dateButtonText}>{formatDate(fechaInicio)}</Text>
-                                <Ionicons name="calendar" size={20} color={colors.primary} />
-                            </TouchableOpacity>
+                        <View style={styles.row}>
+                            <View style={[styles.formGroup, { flex: 1, marginRight: spacing.sm }]}>
+                                <Text style={styles.label}>Inicio</Text>
+                                <TouchableOpacity
+                                    style={styles.dateButton}
+                                    onPress={() => setShowStartDatePicker(true)}
+                                >
+                                    <Text style={styles.dateButtonText}>{formatDate(fechaInicio)}</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.dateButton, { marginTop: spacing.xs }]}
+                                    onPress={() => setShowStartTimePicker(true)}
+                                >
+                                    <Text style={styles.dateButtonText}>{formatTime(fechaInicio)}</Text>
+                                </TouchableOpacity>
+                            </View>
+
+                            <View style={[styles.formGroup, { flex: 1, marginLeft: spacing.sm }]}>
+                                <Text style={styles.label}>Fin</Text>
+                                <TouchableOpacity
+                                    style={styles.dateButton}
+                                    onPress={() => setShowEndDatePicker(true)}
+                                >
+                                    <Text style={styles.dateButtonText}>{formatDate(fechaFin)}</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.dateButton, { marginTop: spacing.xs }]}
+                                    onPress={() => setShowEndTimePicker(true)}
+                                >
+                                    <Text style={styles.dateButtonText}>{formatTime(fechaFin)}</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
 
-                        <View style={styles.formGroup}>
-                            <Text style={styles.label}>Fecha Fin</Text>
-                            <TouchableOpacity
-                                style={styles.dateButton}
-                                onPress={() => setShowEndDatePicker(true)}
-                            >
-                                <Text style={styles.dateButtonText}>{formatDate(fechaFin)}</Text>
-                                <Ionicons name="calendar" size={20} color={colors.primary} />
-                            </TouchableOpacity>
-                        </View>
-
+                        {/* Date Pickers */}
                         {showStartDatePicker && (
                             <DateTimePicker
                                 value={fechaInicio}
@@ -244,11 +301,14 @@ export default function CalendarConfigScreen({ route, navigation }: { route: any
                                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                                 onChange={(event, date) => {
                                     setShowStartDatePicker(false);
-                                    if (date) setFechaInicio(date);
+                                    if (date) {
+                                        const newDate = new Date(fechaInicio);
+                                        newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+                                        setFechaInicio(newDate);
+                                    }
                                 }}
                             />
                         )}
-
                         {showEndDatePicker && (
                             <DateTimePicker
                                 value={fechaFin}
@@ -256,7 +316,43 @@ export default function CalendarConfigScreen({ route, navigation }: { route: any
                                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                                 onChange={(event, date) => {
                                     setShowEndDatePicker(false);
-                                    if (date) setFechaFin(date);
+                                    if (date) {
+                                        const newDate = new Date(fechaFin);
+                                        newDate.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+                                        setFechaFin(newDate);
+                                    }
+                                }}
+                            />
+                        )}
+
+                        {/* Time Pickers */}
+                        {showStartTimePicker && (
+                            <DateTimePicker
+                                value={fechaInicio}
+                                mode="time"
+                                display="default"
+                                onChange={(event, date) => {
+                                    setShowStartTimePicker(false);
+                                    if (date) {
+                                        const newDate = new Date(fechaInicio);
+                                        newDate.setHours(date.getHours(), date.getMinutes());
+                                        setFechaInicio(newDate);
+                                    }
+                                }}
+                            />
+                        )}
+                        {showEndTimePicker && (
+                            <DateTimePicker
+                                value={fechaFin}
+                                mode="time"
+                                display="default"
+                                onChange={(event, date) => {
+                                    setShowEndTimePicker(false);
+                                    if (date) {
+                                        const newDate = new Date(fechaFin);
+                                        newDate.setHours(date.getHours(), date.getMinutes());
+                                        setFechaFin(newDate);
+                                    }
                                 }}
                             />
                         )}
@@ -433,5 +529,35 @@ const styles = StyleSheet.create({
         color: '#fff',
         fontSize: 16,
         fontWeight: '600',
+    },
+    periodSelectorContainer: {
+        flexDirection: 'row',
+        marginBottom: spacing.sm,
+    },
+    periodOption: {
+        paddingHorizontal: spacing.md,
+        paddingVertical: spacing.sm,
+        borderRadius: borderRadius.md,
+        backgroundColor: colors.bg,
+        borderWidth: 1,
+        borderColor: colors.border,
+        marginRight: spacing.sm,
+    },
+    periodOptionSelected: {
+        backgroundColor: colors.primary,
+        borderColor: colors.primary,
+    },
+    periodOptionText: {
+        color: colors.text,
+        fontSize: 14,
+    },
+    periodOptionTextSelected: {
+        color: '#fff',
+        fontWeight: '600',
+    },
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
     },
 });

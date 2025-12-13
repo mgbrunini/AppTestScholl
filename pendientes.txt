@@ -1,0 +1,11 @@
+- Calendario para una materia en particular
+- poner formulario para comunicarse con el desarrollador
+- perfil para padres 
+- PR: posibilidad de ver calificaciones de alumnos (solo LECTURA)
+- PR: poder tomar asistencia
+- campana de notificaciones sigue sin funcionar
+- boton config: desactivo una opcion, dice que se guarda pero en el panel principal veo todo igual.
+- existe la opcion de que la app tenga su acceso web? 
+- ROL equipo OE
+
+roll owner

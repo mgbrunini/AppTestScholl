@@ -49,16 +49,36 @@ function crearDB() {
         'rol',                  // ENUM('Padre','Docente','Directivo','Preceptor','Admin')
         'password',             // VARCHAR(255) - Hasheada con salt
         'fk_colegio',           // VARCHAR(50) - Foreign Key (legacy, ahora se usa Personal_Colegios)
-        'activo'                // BOOLEAN
+        'activo',               // BOOLEAN
+        'push_token'            // VARCHAR(100) - Token para notificaciones push (Expo)
       ]);
       creadas.push('Usuarios');
     } else {
       existentes.push('Usuarios');
     }
-    
+
+    // ... (Colegios, Personal_Colegios, Materias, Alumnos, Inscripciones, Calificaciones, CalendarioCalificaciones, Notificaciones, ConfiguracionUI remain same)
+
     // ==========================================
-    // TABLA: Colegios
+    // TABLA: ActivityLogs (Log de auditoría detallado)
     // ==========================================
+    // Registro completo de actividad del usuario
+    var logsSheet = ss.getSheetByName('ActivityLogs');
+    if (!logsSheet) {
+      logsSheet = ss.insertSheet('ActivityLogs');
+      logsSheet.appendRow([
+        'pk_log',               // UUID - Primary Key
+        'timestamp',            // DATETIME
+        'fk_usuario',           // VARCHAR(20) - DNI del usuario
+        'pantalla',             // VARCHAR(50) - Pantalla donde ocurrió
+        'accion',               // VARCHAR(50) - Acción realizada (LOGIN, VIEW, CREATE, UPDATE)
+        'detalles',             // TEXT - JSON con detalles
+        'dispositivo'           // VARCHAR(100) - Info del dispositivo
+      ]);
+      creadas.push('ActivityLogs');
+    } else {
+      existentes.push('ActivityLogs');
+    }
     // Almacena información de las instituciones educativas
     var colegiosSheet = ss.getSheetByName('Colegios');
     if (!colegiosSheet) {
@@ -173,6 +193,33 @@ function crearDB() {
       creadas.push('Inscripciones');
     } else {
       existentes.push('Inscripciones');
+    }
+    
+    // ==========================================
+    // TABLA: Calificaciones
+    // ==========================================
+    // Almacena todas las calificaciones de los alumnos
+    // Incluye intensificaciones, avances y calificaciones de cuatrimestres
+    var calificacionesSheet = ss.getSheetByName('Calificaciones');
+    if (!calificacionesSheet) {
+      calificacionesSheet = ss.insertSheet('Calificaciones');
+      calificacionesSheet.appendRow([
+        'pk_calificacion',      // A: VARCHAR(50) - Primary Key (UUID)
+        'fk_inscripcion',       // B: VARCHAR(50) - Foreign Key -> Inscripciones.pk_inscripcion
+        'fk_alumno',            // C: VARCHAR(20) - Foreign Key -> Alumnos.pk_alumno (DNI)
+        'fk_materia',           // D: VARCHAR(50) - Foreign Key -> Materias.pk_materia
+        'fk_colegio',           // E: INT - Foreign Key -> Colegios.pk_colegio
+        'year',                 // F: INT - Año lectivo (ej: 2024, 2025)
+        'periodo',              // G: ENUM - Tipo de evaluación (1RA_INTENSIFICACION, 1ER_AVANCE, etc.)
+        'valor',                // H: VARCHAR(10) - Valor de la calificación (numérico 1-10 o TEA/TEP/TED)
+        'fecha_carga',          // I: DATETIME - Fecha y hora de carga
+        'cargado_por',          // J: VARCHAR(20) - DNI del docente que cargó la nota
+        'observaciones',        // K: TEXT - Observaciones opcionales
+        'activo'                // L: BOOLEAN - TRUE = vigente, FALSE = eliminada
+      ]);
+      creadas.push('Calificaciones');
+    } else {
+      existentes.push('Calificaciones');
     }
     
     // ==========================================

@@ -7,11 +7,15 @@ import { spacing, borderRadius, shadows } from '../theme/spacing';
 import { api } from '../services/api';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 
+import { SecureStorage } from '../services/SecureStorage';
+import { registerForPushNotificationsAsync } from '../services/PushNotificationService';
+
 export default function SettingsScreen({ route, navigation }: { route: any, navigation: any }) {
     const { token, user } = route.params;
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [items, setItems] = useState<any[]>([]);
+    const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
     // Define all possible cards with their default metadata
     const allCards = [
@@ -26,6 +30,10 @@ export default function SettingsScreen({ route, navigation }: { route: any, navi
 
     const loadConfig = useCallback(async () => {
         try {
+            // Load notification preference
+            const notifEnabled = await SecureStorage.isNotificationsEnabled();
+            setNotificationsEnabled(notifEnabled);
+
             const response = await api.getUserUIConfig(user.dni);
             // Expected response: { ok: true, config: { dashboardOrder: ['key1', 'key2'], hiddenCards: ['key3'] } }
             // If no config, we generate a default one based on roles.
@@ -76,6 +84,35 @@ export default function SettingsScreen({ route, navigation }: { route: any, navi
     useEffect(() => {
         loadConfig();
     }, [loadConfig]);
+
+    const handleNotificationToggle = async (value: boolean) => {
+        setNotificationsEnabled(value);
+        await SecureStorage.setNotificationsEnabled(value);
+
+        if (value) {
+            // Enable: Register and send token
+            try {
+                const pushToken = await registerForPushNotificationsAsync();
+                if (pushToken && user?.dni) {
+                    await api.updatePushToken(user.dni, pushToken, token);
+                }
+            } catch (e) {
+                console.error('Error enabling notifications:', e);
+                Alert.alert('Error', 'No se pudieron activar las notificaciones');
+                setNotificationsEnabled(false);
+                await SecureStorage.setNotificationsEnabled(false);
+            }
+        } else {
+            // Disable: Send empty token
+            try {
+                if (user?.dni) {
+                    await api.updatePushToken(user.dni, '', token);
+                }
+            } catch (e) {
+                console.error('Error disabling notifications:', e);
+            }
+        }
+    };
 
     const handleSave = async () => {
         setSaving(true);
@@ -131,7 +168,7 @@ export default function SettingsScreen({ route, navigation }: { route: any, navi
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Configurar Inicio</Text>
+                <Text style={styles.headerTitle}>Configuración</Text>
                 <TouchableOpacity onPress={handleSave} disabled={saving || loading}>
                     {saving ? (
                         <ActivityIndicator size="small" color={colors.primary} />
@@ -140,10 +177,6 @@ export default function SettingsScreen({ route, navigation }: { route: any, navi
                     )}
                 </TouchableOpacity>
             </View>
-
-            <Text style={styles.instruction}>
-                Usa el interruptor para ocultar o mostrar elementos en el inicio.
-            </Text>
 
             {loading ? (
                 <View style={styles.center}>
@@ -155,6 +188,28 @@ export default function SettingsScreen({ route, navigation }: { route: any, navi
                     keyExtractor={(item: any) => item.key}
                     renderItem={renderItem}
                     contentContainerStyle={styles.listContainer}
+                    ListHeaderComponent={
+                        <View>
+                            <Text style={styles.sectionTitle}>General</Text>
+                            <View style={styles.rowItem}>
+                                <View style={styles.itemContent}>
+                                    <Ionicons name="notifications-outline" size={24} color={colors.primary} style={styles.itemIcon} />
+                                    <Text style={styles.itemLabel}>Notificaciones Push</Text>
+                                </View>
+                                <Switch
+                                    value={notificationsEnabled}
+                                    onValueChange={handleNotificationToggle}
+                                    trackColor={{ false: colors.border, true: colors.primary }}
+                                    thumbColor={'#fff'}
+                                />
+                            </View>
+
+                            <Text style={[styles.sectionTitle, { marginTop: spacing.xl }]}>Configurar Inicio</Text>
+                            <Text style={styles.instruction}>
+                                Usa el interruptor para ocultar o mostrar elementos en el inicio.
+                            </Text>
+                        </View>
+                    }
                 />
             )}
         </ScreenWrapper>
@@ -213,5 +268,10 @@ const styles = StyleSheet.create({
     itemLabel: {
         ...textStyles.body,
         color: colors.text,
+    },
+    sectionTitle: {
+        ...textStyles.h3,
+        color: colors.text,
+        marginBottom: spacing.sm,
     },
 });

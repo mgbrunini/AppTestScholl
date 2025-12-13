@@ -1,10 +1,29 @@
 import { LoginResponse, DashboardResponse } from '../types';
 
 // TODO: El usuario deberá reemplazar esto con su URL de Web App publicada
-export const API_URL = 'https://script.google.com/macros/s/AKfycby2GPWI5pbp3Gqb2RtoNoMmg5GCyWasiz7-p9tNTWo3_1c0pQs90wqb2BErUQK9J6RWDw/exec';
+export const API_URL = 'https://script.google.com/macros/s/AKfycbxgx3ASxoJnkV7-Z_ac8yknOz8_w_PNLRAWcgd97CSSyqh0988dpwwfQpAZ_9rpjghdaQ/exec';
+
+import OfflineService from './OfflineService';
 
 export const api = {
     async post(action: string, payload: any = {}): Promise<any> {
+        // Generate a cache key based on action and payload
+        // We exclude 'token' sometimes or just hash the whole thing? 
+        // Simple key: action + JSON.stringify(payload) (careful with large payloads)
+        const cacheKey = `${action}_${JSON.stringify(payload)}`;
+
+        if (!OfflineService.getIsConnected()) {
+            console.log(`[API] Offline mode detected. Checking cache for ${action}`);
+            const cachedData = await OfflineService.getCachedResponse(cacheKey);
+            if (cachedData) {
+                return cachedData;
+            }
+            // If offline and no cache, returns specific error or empty?
+            // User saw "Error de conexion", we probably want to suppress it if we return cached data.
+            // But if no cache, we still return error.
+            return { ok: false, msg: `Modo Offline: No hay datos guardados para: ${action}.` };
+        }
+
         console.log(`[API] Enviando POST a ${action}`, payload);
         try {
             const response = await fetch(API_URL, {
@@ -20,6 +39,12 @@ export const api = {
 
             try {
                 const data = JSON.parse(text);
+                // Cache successful responses for read operations
+                if (data && (data.ok || Array.isArray(data))) {
+                    // We cache everything that looks successful?
+                    // Be careful with large data, but for this app it seems fine.
+                    OfflineService.saveCachedResponse(cacheKey, data);
+                }
                 return data;
             } catch (e) {
                 console.error('[API] Error al parsear JSON:', e);
@@ -27,6 +52,12 @@ export const api = {
             }
         } catch (error) {
             console.error('[API] Error de red:', error);
+            // If network fails (timeout, etc) but we thought we were online, try cache as fallback?
+            const cachedData = await OfflineService.getCachedResponse(cacheKey);
+            if (cachedData) {
+                console.log(`[API] Network failed, using fallback cache for ${action}`);
+                return cachedData;
+            }
             return { ok: false, msg: 'Error de conexión con el servidor' };
         }
     },
@@ -51,11 +82,17 @@ export const api = {
         return this.post('getMateriasDepartamento', { token });
     },
 
-    async getAlumnosMateria(curso: string, materia: string, collegeId: string): Promise<any> {
-        return this.post('getAlumnosMateria', { curso, materia, collegeId });
+    async getAlumnosMateria(curso: string, materia: string, collegeId: string, year?: number, token?: string): Promise<any> {
+        const payload: any = { curso, materia, collegeId, year };
+        if (token) payload.token = token;
+        return this.post('getAlumnosMateria', payload);
     },
 
     async saveCalificacion(token: string, data: any): Promise<any> {
+        if (!OfflineService.getIsConnected()) {
+            await OfflineService.addToQueue('saveCalificacion', { token, ...data });
+            return { ok: true, offline: true, msg: 'Saved offline' };
+        }
         return this.post('saveCalificacion', { token, ...data });
     },
 
@@ -263,8 +300,20 @@ export const api = {
         return this.post('getUnreadCount', { dni });
     },
 
-    async updatePushToken(dni: string, pushToken: string): Promise<any> {
-        return this.post('updatePushToken', { dni, pushToken });
+    async updatePushToken(dni: string, pushToken: string, token: string): Promise<any> {
+        return this.post('updatePushToken', { dni, pushToken, token });
+    },
+
+    // Logging System
+    async logActivity(data: {
+        token?: string,
+        userId?: string,
+        pantalla: string,
+        accion: string,
+        detalles?: any,
+        dispositivo?: string
+    }): Promise<any> {
+        return this.post('logActivity', data);
     },
 
     // UI Configuration
@@ -274,5 +323,39 @@ export const api = {
 
     async updateUserUIConfig(dni: string, config: any): Promise<any> {
         return this.post('updateUserUIConfig', { dni, config });
+    },
+
+    // Grading System
+    async saveGrade(data: {
+        token: string,
+        inscripcionId: string,
+        alumnoId: string,
+        materiaId: string,
+        collegeId: string,
+        year: number,
+        periodo: string,
+        valor: string,
+        observaciones?: string
+    }): Promise<any> {
+        // Intercept for offline handling
+        if (!OfflineService.getIsConnected()) {
+            await OfflineService.addToQueue('saveCalificacion', data);
+            return { ok: true, offline: true, msg: 'Saved offline' };
+        }
+        return this.post('saveCalificacion', data);
+    },
+
+    async getStudentGrades(alumnoId: string, materiaId: string, year: number): Promise<any> {
+        return this.post('getCalificacionesAlumno', { alumnoId, materiaId, year });
+    },
+
+    async getSubjectGrades(materiaId: string, periodo: string, year: number, token?: string): Promise<any> {
+        const payload: any = { materiaId, periodo, year };
+        if (token) payload.token = token;
+        return this.post('getCalificacionesMateria', payload);
+    },
+
+    async getStudentSubjectGrades(studentId: string, materiaId: string, year: number): Promise<any> {
+        return this.post('getStudentSubjectGrades', { studentId, materiaId, year });
     }
 };

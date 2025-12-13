@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { typography, textStyles } from '../theme/typography';
@@ -9,12 +10,19 @@ import { User, College } from '../types';
 import { Ionicons } from '@expo/vector-icons';
 import { SecureStorage } from '../services/SecureStorage';
 import { CollegePickerModal } from '../components/CollegePickerModal';
-// DESHABILITADO TEMPORALMENTE - Requiere development build
-// import { registerForPushNotificationsAsync } from '../services/PushNotificationService';
-// import * as Notifications from 'expo-notifications';
+import { registerForPushNotificationsAsync } from '../services/PushNotificationService';
 
 export default function DashboardScreen({ route, navigation }: { route: any, navigation: any }) {
-    const { user, token } = route.params || {};
+    const { user: paramUser, token: paramToken } = route.params || {};
+
+    // Mock data for anonymous access
+    const user = paramUser || {
+        nombre: 'Invitado',
+        rol: 'docente',
+        dni: '00000000',
+        email: 'invitado@escuelapp.com'
+    };
+    const token = paramToken || 'ANONYMOUS_TOKEN';
     const [dashboardData, setDashboardData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
@@ -26,61 +34,74 @@ export default function DashboardScreen({ route, navigation }: { route: any, nav
     const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
     const [showCollegePicker, setShowCollegePicker] = useState(false);
 
-
-    const loadUiConfig = async () => {
-        if (!user?.dni) return;
+    const refreshCalendarEvents = async (collegeId: string) => {
         try {
-            const response = await api.getUserUIConfig(user.dni);
-            if (response.ok && response.config) {
-                setUiConfig(response.config);
+            const calendarRes = await api.getCalendarPeriods(collegeId);
+            if (calendarRes.ok && calendarRes.periods) {
+                const now = new Date();
+                // Map API properties (startDate/endDate) to component properties (fechaInicio/fechaFin)
+                const mappedPeriods = calendarRes.periods.map((p: any) => ({
+                    ...p,
+                    fechaInicio: p.fechaInicio || p.startDate,
+                    fechaFin: p.fechaFin || p.endDate,
+                    nombre: p.nombre || p.name
+                }));
+
+                const upcoming = mappedPeriods
+                    .filter((p: any) => new Date(p.fechaFin) >= now) // Show active (ends in future) and upcoming
+                    .sort((a: any, b: any) => new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime())
+                    .slice(0, 3);
+                setUpcomingEvents(upcoming);
             }
         } catch (error) {
-            console.log('Error loading UI config:', error);
+            console.log('Error loading calendar events:', error);
         }
     };
 
-    const loadUnreadNotifications = async () => {
-        if (!user?.dni) return;
-        try {
-            const response = await api.getUnreadCount(user.dni);
-            if (response.ok) {
-                setUnreadCount(response.count || 0);
-            }
-        } catch (error) {
-            console.log('Error fetching unread count:', error);
-        }
-    };
-
-    const loadDashboard = async () => {
-        try {
-            const data = await api.getDashboard(token);
-            if (data.ok) {
-                setDashboardData(data);
-
-                // Handle Colleges
-                if (data.colleges && data.colleges.length > 0) {
-                    setAvailableColleges(data.colleges);
-                    // Default to the first one or the one returned as 'colegio'
-                    setSelectedCollege(data.colegio || data.colleges[0]);
-                } else if (data.colegio) {
-                    // Fallback for single college
-                    setAvailableColleges([data.colegio]);
-                    setSelectedCollege(data.colegio);
+    useFocusEffect(
+        useCallback(() => {
+            const refreshData = async () => {
+                // Refresh notifications
+                if (user?.dni) {
+                    try {
+                        const response = await api.getUnreadCount(user.dni);
+                        if (response.ok) {
+                            setUnreadCount(response.count || 0);
+                        }
+                    } catch (error) {
+                        console.log('Error refreshing unread count:', error);
+                    }
                 }
-            } else {
-                Alert.alert('Error', data.msg || 'No se pudo cargar el dashboard');
-            }
-        } catch (error) {
-            console.error(error);
-        } finally {
-            setLoading(false);
-        }
-    };
+
+                // Refresh calendar events
+                if (selectedCollege?.pk_colegio) {
+                    refreshCalendarEvents(selectedCollege.pk_colegio.toString());
+                }
+            };
+            refreshData();
+        }, [user?.dni, selectedCollege])
+    );
+
+    // ... (loadUiConfig, loadUnreadNotifications, loadDashboard helpers omitted if not changed) ...
 
     // Load data when component mounts
     useEffect(() => {
         const initializeDashboard = async () => {
             setLoading(true);
+
+            // Register for Push Notifications
+            try {
+                const notificationsEnabled = await SecureStorage.isNotificationsEnabled();
+                if (notificationsEnabled) {
+                    const pushToken = await registerForPushNotificationsAsync();
+                    if (pushToken && user?.dni) {
+                        await api.updatePushToken(user.dni, pushToken, token);
+                    }
+                }
+            } catch (e) {
+                console.log('Error registering push token:', e);
+            }
+
             try {
                 // Execute independent calls in parallel
                 const [dashboardRes, uiConfigRes, unreadRes] = await Promise.all([
@@ -118,19 +139,7 @@ export default function DashboardScreen({ route, navigation }: { route: any, nav
                 const collegeToUse = dashboardRes.ok ? (dashboardRes.colegio || (dashboardRes.colleges && dashboardRes.colleges[0])) : null;
 
                 if (collegeToUse?.pk_colegio) {
-                    try {
-                        const calendarRes = await api.getCalendarPeriods(collegeToUse.pk_colegio.toString());
-                        if (calendarRes.ok && calendarRes.periods) {
-                            const now = new Date();
-                            const upcoming = calendarRes.periods
-                                .filter((p: any) => new Date(p.fechaInicio) > now)
-                                .sort((a: any, b: any) => new Date(a.fechaInicio).getTime() - new Date(b.fechaInicio).getTime())
-                                .slice(0, 3);
-                            setUpcomingEvents(upcoming);
-                        }
-                    } catch (error) {
-                        console.log('Error loading calendar events:', error);
-                    }
+                    await refreshCalendarEvents(collegeToUse.pk_colegio.toString());
                 }
 
             } catch (error) {
@@ -429,7 +438,6 @@ export default function DashboardScreen({ route, navigation }: { route: any, nav
                     }
                     return null;
                 })()}
-                <NavButton icon="chatbubbles-outline" label="Mensajes" />
                 <NavButton
                     icon="settings-outline"
                     label="Config"

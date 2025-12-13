@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator, Linking } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { colors } from '../theme/colors';
 import { textStyles } from '../theme/typography';
 import { spacing, borderRadius, shadows } from '../theme/spacing';
@@ -24,7 +24,11 @@ export default function MisMateriasScreen({ route, navigation }: { route: any, n
     }, [selectedCollege]); // Reload when college changes
 
     const loadMaterias = async () => {
-        if (!selectedCollege?.pk_colegio) return;
+        if (!selectedCollege?.pk_colegio) {
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         try {
             const response = await api.getMateriasDocente(token, selectedCollege.pk_colegio);
@@ -41,25 +45,16 @@ export default function MisMateriasScreen({ route, navigation }: { route: any, n
         }
     };
 
-    const handleVerAlumnos = (materia: any) => {
-        navigation.navigate('ListaAlumnos', {
+    const handleMateriaClick = (materia: any) => {
+        navigation.navigate('MateriaDetail', {
             token,
-            curso: materia.curso,
-            materia: materia.materia,
-            collegeId: selectedCollege?.pk_colegio
+            materia,
+            colegio: selectedCollege
         });
     };
 
-    const handleVerProyecto = (materia: any) => {
-        if (materia.proyectoUrl) {
-            Linking.openURL(materia.proyectoUrl);
-        } else {
-            Alert.alert('Info', 'Esta materia no tiene un enlace de proyecto configurado.');
-        }
-    };
-
     const renderItem = ({ item }: { item: any }) => (
-        <View style={styles.card}>
+        <TouchableOpacity style={styles.card} onPress={() => handleMateriaClick(item)} activeOpacity={0.7}>
             <View style={styles.cardHeader}>
                 <View style={styles.iconContainer}>
                     <Ionicons name="book" size={24} color={colors.primary} />
@@ -69,25 +64,13 @@ export default function MisMateriasScreen({ route, navigation }: { route: any, n
                     <View style={styles.cursoBadge}>
                         <Text style={styles.cursoText}>{item.curso}</Text>
                     </View>
+                    {item.horario && (
+                        <Text style={styles.horarioText}>📅 {item.horario}</Text>
+                    )}
                 </View>
+                <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
             </View>
-
-            <View style={styles.divider} />
-
-            <View style={styles.actions}>
-                <TouchableOpacity style={styles.actionBtn} onPress={() => handleVerAlumnos(item)}>
-                    <Ionicons name="people-outline" size={20} color={colors.primary} />
-                    <Text style={styles.actionText}>Alumnos</Text>
-                </TouchableOpacity>
-
-                <View style={styles.verticalDivider} />
-
-                <TouchableOpacity style={styles.actionBtn} onPress={() => handleVerProyecto(item)}>
-                    <Ionicons name="document-text-outline" size={20} color={colors.textSecondary} />
-                    <Text style={[styles.actionText, { color: colors.textSecondary }]}>Proyecto</Text>
-                </TouchableOpacity>
-            </View>
-        </View>
+        </TouchableOpacity>
     );
 
     return (
@@ -223,6 +206,11 @@ const styles = StyleSheet.create({
         ...textStyles.caption,
         color: colors.textSecondary,
         fontWeight: '500',
+    },
+    horarioText: {
+        ...textStyles.caption,
+        color: colors.textMuted,
+        marginTop: 4,
     },
     divider: {
         height: 1,

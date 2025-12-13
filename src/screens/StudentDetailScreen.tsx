@@ -9,8 +9,13 @@ import { api } from '../services/api';
 import { ScreenWrapper } from '../components/ScreenWrapper';
 
 export default function StudentDetailScreen({ route, navigation }: { route: any, navigation: any }) {
-    const { student, colegio } = route.params;
+    const { student, studentId, colegio, token } = route.params;
+
+    // Handle both formats: full student object or just studentId
+    const actualStudentId = student?.pk_alumno || student?.id || studentId;
+
     const [loading, setLoading] = useState(true);
+    const [studentData, setStudentData] = useState(student || null);
     const [materias, setMaterias] = useState<any[]>([]);
     const [allMaterias, setAllMaterias] = useState<any[]>([]); // For adding new subjects
     const [showAddModal, setShowAddModal] = useState(false);
@@ -20,9 +25,17 @@ export default function StudentDetailScreen({ route, navigation }: { route: any,
     const loadData = async () => {
         setLoading(true);
         try {
+            // If we don't have full student data, fetch it
+            if (!studentData) {
+                const studentRes = await api.getStudentDetail(actualStudentId);
+                if (studentRes.ok && studentRes.student) {
+                    setStudentData(studentRes.student);
+                }
+            }
+
             const [studentSubjectsRes, allSubjectsRes] = await Promise.all([
-                api.getStudentSubjects(student.pk_alumno),
-                api.getSubjects(colegio.pk_colegio)
+                api.getStudentSubjects(actualStudentId),
+                api.getSubjects(colegio?.pk_colegio || colegio)
             ]);
 
             if (studentSubjectsRes.ok) {
@@ -45,7 +58,7 @@ export default function StudentDetailScreen({ route, navigation }: { route: any,
     useFocusEffect(
         useCallback(() => {
             loadData();
-        }, [student.pk_alumno])
+        }, [actualStudentId])
     );
 
     const handleRemoveSubject = async (subjectId: string, subjectName: string) => {
@@ -60,7 +73,7 @@ export default function StudentDetailScreen({ route, navigation }: { route: any,
                     onPress: async () => {
                         setLoading(true);
                         try {
-                            const res = await api.removeStudentSubject(student.pk_alumno, subjectId);
+                            const res = await api.removeStudentSubject(actualStudentId, subjectId);
                             if (res.ok) {
                                 loadData();
                             } else {
@@ -96,11 +109,11 @@ export default function StudentDetailScreen({ route, navigation }: { route: any,
 
     const handleAddSubject = async (subject: any) => {
         // Validation: Cannot add subjects from future years (but allow previous years)
-        const studentYearNum = getYearNumber(student.anio);
+        const studentYearNum = getYearNumber(studentData?.anio || '');
         const subjectYearNum = getYearNumber(subject.curso);
 
         if (subjectYearNum > studentYearNum) {
-            Alert.alert('Error', `No se pueden agregar materias de años superiores (${subject.curso}) al curso actual del alumno (${student.anio}).`);
+            Alert.alert('Error', `No se pueden agregar materias de años superiores (${subject.curso}) al curso actual del alumno (${studentData?.anio || 'desconocido'}).`);
             return;
         }
         // Previous years are allowed - students can take subjects from earlier years
@@ -108,7 +121,7 @@ export default function StudentDetailScreen({ route, navigation }: { route: any,
 
         setLoading(true);
         try {
-            const res = await api.addStudentSubject(student.pk_alumno, subject.id, selectedCondition);
+            const res = await api.addStudentSubject(actualStudentId, subject.id, selectedCondition);
             if (res.ok) {
                 setShowAddModal(false);
                 loadData();
@@ -181,8 +194,8 @@ export default function StudentDetailScreen({ route, navigation }: { route: any,
                     <Ionicons name="arrow-back" size={24} color={colors.text} />
                 </TouchableOpacity>
                 <View>
-                    <Text style={styles.headerTitle}>{student.nombre} {student.apellido}</Text>
-                    <Text style={styles.headerSubtitle}>{student.anio || 'Sin año'} {student.division || ''}</Text>
+                    <Text style={styles.headerTitle}>{studentData?.nombre || 'Cargando...'} {studentData?.apellido || ''}</Text>
+                    <Text style={styles.headerSubtitle}>{studentData?.anio || 'Sin año'} {studentData?.division || ''}</Text>
                 </View>
                 <TouchableOpacity
                     style={styles.addButton}

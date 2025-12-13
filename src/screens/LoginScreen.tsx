@@ -70,6 +70,15 @@ export default function LoginScreen({ navigation }: { navigation: any }) {
             const userData = await SecureStorage.getUserData();
 
             if (token && userData) {
+                // Log auto-login
+                api.logActivity({
+                    token,
+                    userId: userData.dni,
+                    pantalla: 'Login',
+                    accion: 'LOGIN_AUTO',
+                    detalles: { method: 'secure_storage' }
+                }).catch(console.error);
+
                 navigation.replace('Dashboard', { user: userData, token });
             }
         } catch (error) {
@@ -106,6 +115,15 @@ export default function LoginScreen({ navigation }: { navigation: any }) {
             const response = await api.login(user, pass);
 
             if (response.ok && response.user && response.token) {
+                // Log successful login
+                api.logActivity({
+                    token: response.token,
+                    userId: response.user.dni,
+                    pantalla: 'Login',
+                    accion: 'LOGIN',
+                    detalles: { method: 'password' }
+                }).catch(console.error);
+
                 // Guardar sesión si "Recordarme" está activado
                 if (rememberMe) {
                     await SecureStorage.saveSession(response.token, response.user);

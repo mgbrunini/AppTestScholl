@@ -24,11 +24,16 @@ import AssignTeacherScreen from '../screens/AssignTeacherScreen';
 import AssignmentHistoryScreen from '../screens/AssignmentHistoryScreen';
 import StudentsListScreen from '../screens/StudentsListScreen';
 import AddStudentScreen from '../screens/AddStudentScreen';
+import MateriaDetailScreen from '../screens/MateriaDetailScreen';
 
 import StudentDetailScreen from '../screens/StudentDetailScreen';
 import CalendarConfigScreen from '../screens/CalendarConfigScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+
+import GradingScreen from '../screens/GradingScreen';
+import StudentGradesScreen from '../screens/StudentGradesScreen';
+import GradeViewerScreen from '../screens/GradeViewerScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -43,8 +48,10 @@ export default function AppNavigator() {
                 <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
                 <Stack.Screen name="Dashboard" component={DashboardScreen} />
                 <Stack.Screen name="MisMaterias" component={MisMateriasScreen} />
+                <Stack.Screen name="MateriaDetail" component={MateriaDetailScreen} />
                 <Stack.Screen name="ListaAlumnos" component={ListaAlumnosScreen} />
                 <Stack.Screen name="Calificar" component={CalificarScreen} />
+                <Stack.Screen name="Grading" component={GradingScreen} />
                 <Stack.Screen name="Profile" component={ProfileScreen} />
                 <Stack.Screen name="Department" component={DepartmentScreen} />
                 <Stack.Screen name="Owner" component={OwnerScreen} />
@@ -63,6 +70,8 @@ export default function AppNavigator() {
                 <Stack.Screen name="CalendarConfig" component={CalendarConfigScreen} />
                 <Stack.Screen name="Notifications" component={NotificationsScreen} />
                 <Stack.Screen name="Settings" component={SettingsScreen} />
+                <Stack.Screen name="StudentGrades" component={StudentGradesScreen} />
+                <Stack.Screen name="GradeViewer" component={GradeViewerScreen} />
             </Stack.Navigator>
         </NavigationContainer>
     );

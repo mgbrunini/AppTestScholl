@@ -5,6 +5,7 @@ const STORAGE_KEYS = {
     USER_TOKEN: '@escuelapp_user_token',
     USER_DATA: '@escuelapp_user_data',
     BIOMETRIC_ENABLED: '@escuelapp_biometric_enabled',
+    NOTIFICATIONS_ENABLED: '@escuelapp_notifications_enabled',
 };
 
 export const SecureStorage = {
@@ -82,6 +83,27 @@ export const SecureStorage = {
             return enabled === 'true';
         } catch (error) {
             return false;
+        }
+    },
+
+    // Habilitar/deshabilitar notificaciones
+    async setNotificationsEnabled(enabled: boolean): Promise<void> {
+        try {
+            await AsyncStorage.setItem(STORAGE_KEYS.NOTIFICATIONS_ENABLED, enabled.toString());
+        } catch (error) {
+            console.error('Error setting notification preference:', error);
+            throw error;
+        }
+    },
+
+    // Verificar si notificaciones están habilitadas (default true)
+    async isNotificationsEnabled(): Promise<boolean> {
+        try {
+            const enabled = await AsyncStorage.getItem(STORAGE_KEYS.NOTIFICATIONS_ENABLED);
+            // Default to true if not set
+            return enabled === null || enabled === 'true';
+        } catch (error) {
+            return true;
         }
     },
 };

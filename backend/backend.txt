@@ -1,12 +1,3 @@
-// ==========================================
-// CONFIGURACIÓN
-// ==========================================
-// var SHEET_ID = 'REPLACE_WITH_YOUR_SPREADSHEET_ID'; // Reemplazar con el ID real o dejar así si es container-bound
-// var USERS_SHEET_NAME = 'Alumnos';
-// var COLEGIOS_SHEET_NAME = 'Colegios';
-// var ADMIN_EMAIL = 'admin@escuelapp.com'; // Reemplazar con email del administrador
-// var LOGO_URL = 'https://via.placeholder.com/80'; // Reemplazar con URL del logo
-
 function doPost(e) {
 
   var output = ContentService.createTextOutput();
@@ -54,9 +45,7 @@ function doPost(e) {
       case 'getProfesorMaterias':
         result = getProfesorMaterias(params.token, params.collegeId);
         break;
-      case 'getAlumnosMateria':
-        result = getAlumnosMateria(params.token, params.curso, params.materia);
-        break;
+      // getAlumnosMateria MOVIDO AL FINAL (versión correcta)
       case 'logout':
         result = logout(params.token);
         break;
@@ -132,17 +121,41 @@ function doPost(e) {
       case 'getCalendar':
         result = getCalendar(params.collegeId);
         break;
+      case 'getCalendarPeriods':
+        result = getCalendarPeriods(params.collegeId, params.year);
+        break;
+      case 'deleteCalendarPeriod':
+        result = deleteCalendarPeriod(params.calendarId);
+        break;
+      case 'createCalendarPeriod':
+        result = createCalendarPeriod(params);
+        break;
+      case 'deleteCalendarPeriod':
+        result = deleteCalendarPeriod(params.calendarId);
+        break;
       case 'saveCalendarEvent':
         result = saveCalendarEvent(params.data);
         break;
       case 'getNotifications':
-        result = getNotifications(params.userDni);
+        result = getNotifications(params.dni || params.userDni);
         break;
+      case 'getUnreadCount':
+        result = getUnreadCount(params.dni || params.userDni);
+        break;
+      case 'logActivity':
+        result = logActivity(params);
+        break;
+      case 'updatePushToken':
+        result = updatePushToken(params);
+        break;
+        break;
+      case 'markNotificationAsRead':
       case 'markNotificationRead':
         result = markNotificationRead(params.notificationId);
         break;
+      case 'getUserUIConfig':
       case 'getUIConfig':
-        result = getUIConfig(params.userDni);
+        result = getUIConfig(params.dni || params.userDni);
         break;
       case 'saveUIConfig':
       case 'updateUserUIConfig': // Alias for frontend compatibility
@@ -173,10 +186,23 @@ function doPost(e) {
         result = enrollStudentInSubjects(params.studentDni, params.curso, params.collegeId);
         break;
       case 'getAlumnosMateria':
-        result = getAlumnosMateria(params.curso, params.materia, params.collegeId);
+        result = getAlumnosMateria(params.curso, params.materia, params.collegeId, params.year);
         break;
       case 'getSubjectStudents':
         result = getSubjectStudents(params.subjectId);
+        break;
+      case 'saveCalificacion':
+        result = saveCalificacion(params);
+        break;
+      case 'getCalificacionesAlumno':
+        result = getCalificacionesAlumno(params.alumnoId, params.materiaId, params.year);
+        break;
+      case 'getCalificacionesMateria':
+        result = getCalificacionesMateria(params.materiaId, params.periodo, params.year);
+        break;
+      case 'getStudentSubjectGrades':
+        // Alias for getCalificacionesAlumno with more intuitive naming
+        result = getCalificacionesAlumno(params.studentId, params.materiaId, params.year);
         break;
     }
 
@@ -640,51 +666,6 @@ function getProfesorMaterias(token, collegeId) {
 
   } catch (e) {
     return { ok: false, msg: 'Error al obtener materias: ' + e.toString() };
-  }
-}
-
-function getAlumnosMateria(token, curso, materia) {
-  var user = getSession(token);
-  if (!user) return { ok: false, msg: 'Sesión expirada' };
-
-  try {
-    var colegioId = String(user.fk_colegio);
-    var year = "2025";
-
-    if (!DBGeneral[colegioId] || !DBGeneral[colegioId][year]) {
-      return { ok: true, alumnos: [] };
-    }
-
-    var principalId = DBGeneral[colegioId][year]['principal'];
-    if (!principalId) return { ok: true, alumnos: [] };
-
-    var ss = SpreadsheetApp.openById(principalId);
-    var sheetCurso = ss.getSheetByName(curso);
-
-    if (!sheetCurso) return { ok: true, alumnos: [] };
-
-    var values = sheetCurso.getDataRange().getValues();
-    var headers = values[0].map(function (h) { return String(h || '').toUpperCase(); });
-    var nombreIdx = headers.indexOf("NOMBRE");
-    var apellidoIdx = headers.indexOf("APELLIDO");
-
-    var alumnos = [];
-    for (var i = 1; i < values.length; i++) {
-      var row = values[i];
-      var alumno = (row[apellidoIdx] || "") + ", " + (row[nombreIdx] || "");
-      alumnos.push({
-        nombre: alumno,
-        apellido: String(row[apellidoIdx] || ''),
-        dni: '', // Agregar si existe la columna
-        promedio: null,
-        id: 'a_' + i
-      });
-    }
-
-    return { ok: true, alumnos: alumnos };
-
-  } catch (e) {
-    return { ok: false, msg: 'Error al leer alumnos: ' + e.toString() };
   }
 }
 
@@ -3396,79 +3377,94 @@ function saveUIConfig(userDni, config) {
 
 // Agregar esta función después de removeStudentSubject (alrededor de la línea 1900)
 
-function getAlumnosMateria(curso, materia, collegeId) {
+function getAlumnosMateria(curso, materia, collegeId, year) {
   try {
+    Logger.log('=== INICIO getAlumnosMateria ===');
+    Logger.log('Params: curso=' + curso + ', materia=' + materia + ', collegeId=' + collegeId + ', year=' + year);
+    
     var ss = SpreadsheetApp.openById(SHEET_ID);
 
     // 1. Buscar la materia por nombre y curso
     var materiasSheet = ss.getSheetByName('Materias');
-    if (!materiasSheet) {
-      return { ok: false, msg: 'Hoja de Materias no encontrada' };
-    }
+    if (!materiasSheet) return { ok: false, msg: 'Hoja de Materias no encontrada' };
+    
     var materiasData = materiasSheet.getDataRange().getValues();
     var materiaId = null;
+    
     for (var i = 1; i < materiasData.length; i++) {
       var row = materiasData[i];
-      // Col B (1) = FK_Colegio, Col C (2) = Nombre, Col D (3) = Curso
       if (String(row[1]) === String(collegeId) &&
         String(row[2]).toUpperCase() === String(materia).toUpperCase() &&
         String(row[3]).toUpperCase() === String(curso).toUpperCase()) {
-        materiaId = row[0]; // Col A = ID
+        materiaId = row[0];
+        Logger.log('Materia encontrada ID: ' + materiaId);
         break;
       }
     }
+    
     if (!materiaId) {
-      return { ok: true, alumnos: [] }; // Materia no encontrada, devolver lista vacía
-    }
-    // 2. Buscar inscripciones activas para esta materia
-    var inscripcionesSheet = ss.getSheetByName('Inscripciones');
-    if (!inscripcionesSheet) {
+      Logger.log('Materia NO encontrada');
       return { ok: true, alumnos: [] };
     }
+    
+    // 2. Buscar inscripciones activas
+    var inscripcionesSheet = ss.getSheetByName('Inscripciones');
+    if (!inscripcionesSheet) return { ok: true, alumnos: [] };
+    
     var inscripcionesData = inscripcionesSheet.getDataRange().getValues();
-    var alumnosDnis = [];
-    // ESTRUCTURA INSCRIPCIONES: A=pk_inscripcion, B=fk_alumno, C=fk_materia, 
-    // D=fk_colegio, E=year, F=condicion, G=fecha_inscripcion, H=activo
+    var inscripcionesMap = {}; // Map: dni -> condicion
+    
     for (var i = 1; i < inscripcionesData.length; i++) {
       var row = inscripcionesData[i];
-      // Col C (2) = fk_materia, Col H (7) = activo
-      if (String(row[2]) === String(materiaId) && row[7] === true) {
-        alumnosDnis.push(String(row[1])); // Col B = fk_alumno (DNI)
+      // Convertir todo a String para comparación segura
+      // Col C (2) = fk_materia, Col E (4) = year, Col H (7) = activo
+      if (String(row[2]) === String(materiaId) && 
+          row[7] === true && 
+          (!year || String(row[4]) === String(year))) { // Filtrar por año si se provee
+        inscripcionesMap[String(row[1])] = row[5]; // Guardar condicion (Col F)
       }
     }
-    if (alumnosDnis.length === 0) {
-      return { ok: true, alumnos: [] };
-    }
-    // 3. Obtener datos completos de los alumnos
+    
+    var alumnosDnis = Object.keys(inscripcionesMap);
+    Logger.log('Inscripciones encontradas: ' + alumnosDnis.length);
+    if (alumnosDnis.length === 0) return { ok: true, alumnos: [] };
+    
+    // 3. Obtener datos de alumnos
     var alumnosSheet = ss.getSheetByName('Alumnos');
-    if (!alumnosSheet) {
-      return { ok: false, msg: 'Hoja de Alumnos no encontrada' };
-    }
+    if (!alumnosSheet) return { ok: false, msg: 'Hoja de Alumnos no encontrada' };
+    
     var alumnosData = alumnosSheet.getDataRange().getValues();
     var alumnos = [];
-    // ESTRUCTURA ALUMNOS: A=pk_alumno, B=dni, C=nombre, D=apellido, 
-    // E=fecha_nacimiento, F=fk_colegio, G=curso, H=division, I=condicion, J=activo
+    
     for (var i = 1; i < alumnosData.length; i++) {
       var row = alumnosData[i];
-      var alumnoDni = String(row[0]); // Col A = pk_alumno (DNI)
-
-      // Verificar si este alumno está en la lista de inscritos
-      if (alumnosDnis.indexOf(alumnoDni) !== -1 && row[9] === true) { // Col J = activo
+      var alumnoDni = String(row[0]); // Convertir ID a string
+      
+      // Comparación estricta de strings
+      if (inscripcionesMap.hasOwnProperty(alumnoDni) && row[9] === true) {
         alumnos.push({
           id: alumnoDni,
-          dni: String(row[1]),           // Col B
-          nombre: String(row[2] || ''),  // Col C
-          apellido: String(row[3] || ''),// Col D
-          promedio: null // TODO: Calcular promedio si existe tabla de calificaciones
+          dni: String(row[1]),
+          nombre: String(row[2] || ''),
+          apellido: String(row[3] || ''),
+          condicion: inscripcionesMap[alumnoDni], // Agregar condicion
+          promedio: null
         });
       }
     }
-    // Ordenar por apellido
+    
+    // Ordenar
     alumnos.sort(function (a, b) {
       return a.apellido.localeCompare(b.apellido);
     });
+    
+    Logger.log('Total alumnos retornados: ' + alumnos.length);
     return { ok: true, alumnos: alumnos };
-  } catch (e) { Logger.log('Error en getAlumnosMateria: ' + e.toString()); return { ok: false, msg: 'Error al obtener alumnos de la materia: ' + e.toString() }; }
+    
+  } catch (e) { 
+    Logger.log('ERROR en getAlumnosMateria: ' + e.toString()); 
+    return { ok: false, msg: 'Error al obtener alumnos: ' + e.toString() }; 
+  }
 }
 
 
@@ -3555,4 +3551,738 @@ function getProtectedData(token) {
   var user = getSession(token);
   if (!user) return { ok: false, msg: 'Sesión expirada' };
   return { ok: true, data: 'Datos protegidos', user: user };
+}
+
+// ==========================================
+// SISTEMA DE CALIFICACIONES
+// ==========================================
+
+/**
+ * Valida el valor de una calificación según el tipo de período
+ * @param {string} periodo - Tipo de evaluación
+ * @param {string} valor - Valor de la calificación
+ * @returns {object} { ok: boolean, msg: string }
+ */
+function validateGradeValue(periodo, valor) {
+  try {
+    // Períodos que aceptan TEA/TEP/TED
+    var avancePeriodos = ['1ER_AVANCE', '2DO_AVANCE'];
+    
+    // Períodos de intensificación 5 y 6 (aprobado >= 4)
+    var intensificacionBajaPeriodos = ['5TA_INTENSIFICACION', '6TA_INTENSIFICACION'];
+    
+    // Períodos numéricos estándar (aprobado >= 7)
+    var numericoPeriodos = [
+      '1RA_INTENSIFICACION', '2DA_INTENSIFICACION', '3RA_INTENSIFICACION', '4TA_INTENSIFICACION',
+      '1ER_CUATRIMESTRE', '2DO_CUATRIMESTRE', 'CALIFICACION_FINAL'
+    ];
+    
+    if (avancePeriodos.indexOf(periodo) !== -1) {
+      // Validar TEA/TEP/TED
+      if (['TEA', 'TEP', 'TED'].indexOf(valor.toUpperCase()) === -1) {
+        return { ok: false, msg: 'Para ' + periodo + ' solo se permite TEA, TEP o TED' };
+      }
+      return { ok: true, msg: 'Válido' };
+    }
+    
+    if (intensificacionBajaPeriodos.indexOf(periodo) !== -1 || numericoPeriodos.indexOf(periodo) !== -1) {
+      // Validar numérico 1-10
+      var numValor = parseFloat(valor);
+      if (isNaN(numValor) || numValor < 1 || numValor > 10) {
+        return { ok: false, msg: 'La calificación debe ser un número entre 1 y 10' };
+      }
+      return { ok: true, msg: 'Válido' };
+    }
+    
+    return { ok: false, msg: 'Período de evaluación no reconocido' };
+    
+  } catch (e) {
+    return { ok: false, msg: 'Error al validar calificación: ' + e.toString() };
+  }
+}
+
+/**
+ * Guarda una calificación
+ * @param {object} params - Parámetros de la calificación
+ * @returns {object} { ok: boolean, msg: string, calificacionId?: string }
+ */
+function saveCalificacion(params) {
+  try {
+    var token = params.token;
+    var user = getSession(token);
+    if (!user) return { ok: false, msg: 'Sesión expirada' };
+    
+    // Validar parámetros requeridos
+    if (!params.inscripcionId || !params.alumnoId || !params.materiaId || 
+        !params.collegeId || !params.year || !params.periodo || !params.valor) {
+      return { ok: false, msg: 'Faltan parámetros requeridos' };
+    }
+    
+    // Validar el valor según el período
+    var validation = validateGradeValue(params.periodo, params.valor);
+    if (!validation.ok) {
+      return validation;
+    }
+    
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var calificacionesSheet = ss.getSheetByName('Calificaciones');
+    
+    if (!calificacionesSheet) {
+      return { ok: false, msg: 'Hoja de Calificaciones no encontrada' };
+    }
+    
+    // Verificar si ya existe una calificación para este alumno/materia/período/año
+    var data = calificacionesSheet.getDataRange().getValues();
+    var existingRowIndex = -1;
+    
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      // Cols: B=fk_inscripcion, C=fk_alumno, D=fk_materia, F=year, G=periodo, L=activo
+      if (String(row[1]) === String(params.inscripcionId) &&
+          String(row[2]) === String(params.alumnoId) &&
+          String(row[3]) === String(params.materiaId) &&
+          String(row[5]) === String(params.year) &&
+          String(row[6]) === String(params.periodo) &&
+          row[11] === true) {
+        existingRowIndex = i + 1; // +1 porque las filas en Sheets son 1-indexed
+        break;
+      }
+    }
+    
+    var calificacionId = existingRowIndex > 0 ? data[existingRowIndex - 1][0] : Utilities.getUuid();
+    var now = new Date();
+    
+    var newRow = [
+      calificacionId,                    // A: pk_calificacion
+      params.inscripcionId,              // B: fk_inscripcion
+      params.alumnoId,                   // C: fk_alumno
+      params.materiaId,                  // D: fk_materia
+      params.collegeId,                  // E: fk_colegio
+      params.year,                       // F: year
+      params.periodo,                    // G: periodo
+      params.valor,                      // H: valor
+      now,                               // I: fecha_carga
+      user.pk_usuario,                   // J: cargado_por
+      params.observaciones || '',        // K: observaciones
+      true                               // L: activo
+    ];
+    
+    if (existingRowIndex > 0) {
+      // Actualizar calificación existente
+      calificacionesSheet.getRange(existingRowIndex, 1, 1, 12).setValues([newRow]);
+      
+      // Log Activity
+      logActivity({
+        userId: user.pk_usuario,
+        pantalla: 'BACKEND',
+        accion: 'UPDATE_GRADE',
+        detalles: { calificacionId: calificacionId, alumno: params.alumnoId, materia: params.materiaId, valor: params.valor }
+      });
+      
+      return { ok: true, msg: 'Calificación actualizada exitosamente', calificacionId: calificacionId };
+    } else {
+      // Crear nueva calificación
+      calificacionesSheet.appendRow(newRow);
+      
+      // Log Activity
+      logActivity({
+        userId: user.pk_usuario,
+        pantalla: 'BACKEND',
+        accion: 'CREATE_GRADE',
+        detalles: { calificacionId: calificacionId, alumno: params.alumnoId, materia: params.materiaId, valor: params.valor }
+      });
+      
+      return { ok: true, msg: 'Calificación guardada exitosamente', calificacionId: calificacionId };
+    }
+    
+  } catch (e) {
+    Logger.log('Error en saveCalificacion: ' + e.toString());
+    return { ok: false, msg: 'Error al guardar calificación: ' + e.toString() };
+  }
+}
+
+/**
+ * Obtiene las calificaciones de un alumno en una materia para un año
+ * @param {string} alumnoId - DNI del alumno
+ * @param {string} materiaId - ID de la materia
+ * @param {number} year - Año lectivo
+ * @returns {object} { ok: boolean, calificaciones: array }
+ */
+function getCalificacionesAlumno(alumnoId, materiaId, year) {
+  try {
+    Logger.log('getCalificacionesAlumno called with: alumnoId=' + alumnoId + ', materiaId=' + materiaId + ', year=' + year);
+    
+    if (!alumnoId || !materiaId || !year) {
+      Logger.log('getCalificacionesAlumno: Missing required parameters');
+      return { ok: false, msg: 'Faltan parámetros requeridos' };
+    }
+    
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var calificacionesSheet = ss.getSheetByName('Calificaciones');
+    
+    if (!calificacionesSheet) {
+      Logger.log('getCalificacionesAlumno: Calificaciones sheet not found');
+      return { ok: true, calificaciones: [] };
+    }
+    
+    var data = calificacionesSheet.getDataRange().getValues();
+    var calificaciones = [];
+    
+    Logger.log('getCalificacionesAlumno: Processing ' + (data.length - 1) + ' rows');
+    
+    // Estructura: A=pk, B=fk_inscripcion, C=fk_alumno, D=fk_materia, E=fk_colegio,
+    // F=year, G=periodo, H=valor, I=fecha_carga, J=cargado_por, K=observaciones, L=activo
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      
+      if (String(row[2]) === String(alumnoId) &&
+          String(row[3]) === String(materiaId) &&
+          String(row[5]) === String(year) &&
+          row[11] === true) {
+        calificaciones.push({
+          id: row[0],
+          periodo: row[6],
+          valor: row[7],
+          fechaCarga: row[8],
+          cargadoPor: row[9],
+          observaciones: row[10]
+        });
+      }
+    }
+    
+    Logger.log('getCalificacionesAlumno: Found ' + calificaciones.length + ' calificaciones');
+    return { ok: true, calificaciones: calificaciones };
+    
+  } catch (e) {
+    Logger.log('Error en getCalificacionesAlumno: ' + e.toString());
+    return { ok: false, msg: 'Error al obtener calificaciones: ' + e.toString() };
+  }
+}
+
+/**
+ * Obtiene todas las calificaciones de una materia para un período y año específico
+ * @param {string} materiaId - ID de la materia
+ * @param {string} periodo - Período de evaluación
+ * @param {number} year - Año lectivo
+ * @returns {object} { ok: boolean, calificaciones: array }
+ */
+function getCalificacionesMateria(materiaId, periodo, year) {
+  try {
+    if (!materiaId || !periodo || !year) {
+      return { ok: false, msg: 'Faltan parámetros requeridos' };
+    }
+    
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var calificacionesSheet = ss.getSheetByName('Calificaciones');
+    
+    if (!calificacionesSheet) {
+      return { ok: true, calificaciones: [] };
+    }
+    
+    var data = calificacionesSheet.getDataRange().getValues();
+    var calificacionesMap = {}; // Map: alumnoId -> calificacion
+    
+    // Recopilar calificaciones
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      
+      if (String(row[3]) === String(materiaId) &&
+          String(row[6]) === String(periodo) &&
+          String(row[5]) === String(year) &&
+          row[11] === true) {
+        calificacionesMap[row[2]] = {
+          id: row[0],
+          alumnoId: row[2],
+          valor: row[7],
+          fechaCarga: row[8],
+          cargadoPor: row[9],
+          observaciones: row[10]
+        };
+      }
+    }
+    
+    // Obtener datos de los alumnos
+    var alumnosSheet = ss.getSheetByName('Alumnos');
+    if (!alumnosSheet) {
+      return { ok: false, msg: 'Hoja de Alumnos no encontrada' };
+    }
+    
+    var alumnosData = alumnosSheet.getDataRange().getValues();
+    var calificaciones = [];
+    
+    for (var i = 1; i < alumnosData.length; i++) {
+      var row = alumnosData[i];
+      var alumnoDni = String(row[0]);
+      
+      if (calificacionesMap[alumnoDni]) {
+        var calif = calificacionesMap[alumnoDni];
+        calificaciones.push({
+          id: calif.id,
+          alumnoId: alumnoDni,
+          alumnoNombre: String(row[2] || ''),
+          alumnoApellido: String(row[3] || ''),
+          valor: calif.valor,
+          fechaCarga: calif.fechaCarga,
+          cargadoPor: calif.cargadoPor,
+          observaciones: calif.observaciones
+        });
+      }
+    }
+    
+    // Ordenar por apellido
+    calificaciones.sort(function(a, b) {
+      return a.alumnoApellido.localeCompare(b.alumnoApellido);
+    });
+    
+    return { ok: true, calificaciones: calificaciones };
+    
+  } catch (e) {
+    Logger.log('Error en getCalificacionesMateria: ' + e.toString());
+    return { ok: false, msg: 'Error al obtener calificaciones: ' + e.toString() };
+  }
+}
+
+/**
+ * Obtiene los alumnos inscritos en una materia
+ * @param {string} subjectId - ID de la materia
+ * @returns {object} { ok: boolean, students: array }
+ */
+function getSubjectStudents(subjectId) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    
+    // 1. Obtener inscripciones para esta materia
+    var inscripcionesSheet = ss.getSheetByName('Inscripciones');
+    if (!inscripcionesSheet) return { ok: false, msg: 'Hoja Inscripciones no encontrada' };
+    
+    var inscripcionesData = inscripcionesSheet.getDataRange().getValues();
+    var inscripcionesMap = {}; // Map: alumnoId -> { pk_inscripcion, condicion }
+    var alumnoIds = [];
+    
+    // Estructura: A=pk, B=fk_alumno, C=fk_materia, D=condicion, F=activo
+    for (var i = 1; i < inscripcionesData.length; i++) {
+      var row = inscripcionesData[i];
+      // Filtrar por materia y activo
+      if (String(row[2]) === String(subjectId) && row[5] === true) {
+        var alumnoId = String(row[1]);
+        inscripcionesMap[alumnoId] = {
+          pk_inscripcion: row[0],
+          condicion: row[3]
+        };
+        alumnoIds.push(alumnoId);
+      }
+    }
+    
+    if (alumnoIds.length === 0) {
+      return { ok: true, students: [] }; // No hay alumnos inscritos
+    }
+    
+    // 2. Obtener datos de los alumnos
+    var alumnosSheet = ss.getSheetByName('Alumnos');
+    if (!alumnosSheet) return { ok: false, msg: 'Hoja Alumnos no encontrada' };
+    
+    var alumnosData = alumnosSheet.getDataRange().getValues();
+    var students = [];
+    
+    for (var i = 1; i < alumnosData.length; i++) {
+      var row = alumnosData[i];
+      var id = String(row[0]);
+      
+      if (inscripcionesMap[id]) {
+        students.push({
+          id: id,
+          dni: id,
+          nombre: row[2],
+          apellido: row[3],
+          pk_inscripcion: inscripcionesMap[id].pk_inscripcion, // CRITICO PARA GUARDAR NOTAS
+          condicion: inscripcionesMap[id].condicion
+        });
+      }
+    }
+    
+    // Ordenar por apellido
+    students.sort(function(a, b) {
+      return a.apellido.localeCompare(b.apellido);
+    });
+    
+    return { ok: true, students: students };
+    
+  } catch (e) {
+    Logger.log('Error en getSubjectStudents: ' + e.toString());
+    return { ok: false, msg: 'Error al obtener alumnos de la materia: ' + e.toString() };
+  }
+}
+
+/**
+ * Obtiene los períodos de calificación configurados
+ * @param {string} collegeId - ID del colegio
+ * @param {number} year - Año lectivo (opcional)
+ * @returns {object} { ok: boolean, periods: array }
+ */
+function getCalendarPeriods(collegeId, year) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var calendarioSheet = ss.getSheetByName('CalendarioCalificaciones');
+    
+    if (!calendarioSheet) {
+      return { ok: true, periods: [] };
+    }
+    
+    var data = calendarioSheet.getDataRange().getValues();
+    var periods = [];
+    
+    // Estructura: A=pk, B=fk_colegio, C=fecha_inicio, D=fecha_fin, E=descripcion, 
+    // F=creado_por, G=fecha_creacion, H=activo
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      
+      if (String(row[1]) === String(collegeId) && row[7] === true) {
+        // Si se especifica año, filtrar por fecha de inicio
+        if (year) {
+          var fechaInicio = new Date(row[2]);
+          if (fechaInicio.getFullYear() !== parseInt(year)) {
+            continue;
+          }
+        }
+        
+        periods.push({
+          id: row[0],
+          startDate: row[2],
+          endDate: row[3],
+          name: row[4]
+        });
+      }
+    }
+    
+    // Ordenar por fecha de inicio
+    periods.sort(function(a, b) {
+      return new Date(a.startDate) - new Date(b.startDate);
+    });
+    
+    return { ok: true, periods: periods };
+    
+  } catch (e) {
+    Logger.log('Error en getCalendarPeriods: ' + e.toString());
+    return { ok: false, msg: 'Error al obtener períodos: ' + e.toString() };
+  }
+}
+
+/**
+ * Crea un nuevo período de calificación y notifica a los docentes
+ * @param {object} params - { collegeId, nombre, fechaInicio, fechaFin, token }
+ */
+function createCalendarPeriod(params) {
+  try {
+    var user = getSession(params.token);
+    if (!user) return { ok: false, msg: 'Sesión expirada' };
+    
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var calendarioSheet = ss.getSheetByName('CalendarioCalificaciones');
+    
+    if (!calendarioSheet) return { ok: false, msg: 'Hoja CalendarioCalificaciones no encontrada' };
+    
+    var id = Utilities.getUuid();
+    var now = new Date();
+    
+    calendarioSheet.appendRow([
+      id,
+      params.collegeId,
+      new Date(params.fechaInicio),
+      new Date(params.fechaFin),
+      params.nombre,
+      user.pk_usuario,
+      now,
+      true // activo
+    ]);
+    
+    // Notificar a los docentes
+    notifyTeachersOfNewPeriod(params.collegeId, params.nombre, params.fechaInicio, params.fechaFin);
+    
+    return { ok: true, id: id };
+    
+  } catch (e) {
+    Logger.log('Error en createCalendarPeriod: ' + e.toString());
+    return { ok: false, msg: 'Error al crear período: ' + e.toString() };
+  }
+}
+
+/**
+ * Elimina un período de calificación (marcado lógico como inactivo)
+ * @param {string} calendarId - ID del período a eliminar
+ */
+function deleteCalendarPeriod(calendarId) {
+  try {
+    if (!calendarId) return { ok: false, msg: 'Falta ID del período' };
+    
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var calendarioSheet = ss.getSheetByName('CalendarioCalificaciones');
+    
+    if (!calendarioSheet) return { ok: false, msg: 'Hoja CalendarioCalificaciones no encontrada' };
+    
+    var data = calendarioSheet.getDataRange().getValues();
+    var found = false;
+    
+    // Buscar y desactivar
+    for (var i = 1; i < data.length; i++) {
+        if (String(data[i][0]) === String(calendarId)) {
+        // Columna H (índice 7) es activo. Marcar como falso.
+        calendarioSheet.getRange(i + 1, 8).setValue(false);
+        found = true;
+        break;
+        }
+    }
+    
+    if (found) {
+        return { ok: true, msg: 'Período eliminado correctamente' };
+    } else {
+        return { ok: false, msg: 'Período no encontrado' };
+    }
+  } catch (e) {
+    Logger.log('Error en deleteCalendarPeriod: ' + e.toString());
+    return { ok: false, msg: 'Error al eliminar período: ' + e.toString() };
+  }
+}
+
+/**
+ * Notifica a todos los docentes de un colegio sobre un nuevo período
+ */
+function notifyTeachersOfNewPeriod(collegeId, nombrePeriodo, fechaInicio, fechaFin) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var personalSheet = ss.getSheetByName('Personal_Colegios');
+    var notificacionesSheet = ss.getSheetByName('Notificaciones');
+    
+    if (!personalSheet || !notificacionesSheet) return;
+    
+    var personalData = personalSheet.getDataRange().getValues();
+    var docentesIds = [];
+    
+    // Buscar docentes del colegio
+    for (var i = 1; i < personalData.length; i++) {
+      var row = personalData[i];
+      // Col B=fk_usuario, Col C=fk_colegio, Col D=rol, Col E=activo
+      if (String(row[2]) === String(collegeId) && 
+          String(row[3]).toLowerCase() === 'docente' && 
+          row[4] === true) {
+        docentesIds.push(row[1]);
+      }
+    }
+    
+    // Obtener tokens de push de los docentes
+    var usuariosSheet = ss.getSheetByName('Usuarios');
+    var usuariosData = usuariosSheet.getDataRange().getValues();
+    var pushTokens = [];
+    
+    // Buscar índice de push_token
+    var headers = usuariosData[0];
+    var pushTokenIndex = headers.indexOf('push_token');
+    
+    if (pushTokenIndex !== -1) {
+      for (var j = 1; j < usuariosData.length; j++) {
+        var userRow = usuariosData[j];
+        var userId = userRow[0]; // pk_usuario (DNI)
+        var token = userRow[pushTokenIndex];
+        
+        if (docentesIds.indexOf(userId) !== -1 && token) {
+          pushTokens.push(token);
+        }
+      }
+    }
+    
+    // Crear notificaciones en DB
+    var now = new Date();
+    var fInicio = new Date(fechaInicio).toLocaleDateString('es-AR');
+    var fFin = new Date(fechaFin).toLocaleDateString('es-AR');
+    var mensaje = 'Nuevo período de calificación: ' + nombrePeriodo + '. Desde ' + fInicio + ' hasta ' + fFin + '.';
+    
+    var newRows = docentesIds.map(function(userId) {
+      return [
+        Utilities.getUuid(), // pk
+        userId,              // fk_usuario
+        'SISTEMA',           // tipo
+        'CALENDARIO',        // titulo
+        mensaje,             // mensaje
+        false,               // leido
+        now,                 // fecha_creacion
+        true                 // activo
+      ];
+    });
+    
+    if (newRows.length > 0) {
+      // Escribir en lotes
+      var lastRow = notificacionesSheet.getLastRow();
+      notificacionesSheet.getRange(lastRow + 1, 1, newRows.length, newRows[0].length).setValues(newRows);
+      
+      // Enviar Push Notifications
+      if (pushTokens.length > 0) {
+        sendPushNotification(pushTokens, 'Nuevo Período de Calificación', mensaje, { type: 'CALENDARIO' });
+      }
+    }
+    
+  } catch (e) {
+    Logger.log('Error en notifyTeachersOfNewPeriod: ' + e.toString());
+  }
+}
+
+/**
+ * Registra una actividad en el log
+ * @param {object} params - { token, pantalla, accion, detalles, dispositivo }
+ */
+function logActivity(params) {
+  try {
+    var user = getSession(params.token);
+    // Permitir loguear incluso si no hay sesión (ej: intento de login fallido)
+    var userId = user ? user.pk_usuario : (params.userId || 'ANONYMOUS');
+    
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var logsSheet = ss.getSheetByName('ActivityLogs');
+    
+    if (!logsSheet) {
+      // Si no existe, intentar crearla (fallback simple)
+      logsSheet = ss.insertSheet('ActivityLogs');
+      logsSheet.appendRow(['pk_log', 'timestamp', 'fk_usuario', 'pantalla', 'accion', 'detalles', 'dispositivo']);
+    }
+    
+    var id = Utilities.getUuid();
+    var now = new Date();
+    var detalles = params.detalles ? (typeof params.detalles === 'object' ? JSON.stringify(params.detalles) : params.detalles) : '';
+    
+    logsSheet.appendRow([
+      id,
+      now,
+      userId,
+      params.pantalla || 'UNKNOWN',
+      params.accion || 'UNKNOWN',
+      detalles,
+      params.dispositivo || ''
+    ]);
+    
+    return { ok: true };
+    
+  } catch (e) {
+    Logger.log('Error en logActivity: ' + e.toString());
+    return { ok: false, msg: e.toString() };
+  }
+}
+
+/**
+ * Actualiza el token de notificación push del usuario
+ * @param {object} params - { token, pushToken }
+ */
+function updatePushToken(params) {
+  try {
+    var user = getSession(params.token);
+    if (!user) return { ok: false, msg: 'Sesión expirada' };
+    
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var usuariosSheet = ss.getSheetByName('Usuarios');
+    
+    if (!usuariosSheet) return { ok: false, msg: 'Hoja Usuarios no encontrada' };
+    
+    var data = usuariosSheet.getDataRange().getValues();
+    var found = false;
+    
+    // Buscar usuario y actualizar token
+    // Asumimos que la columna 'push_token' es la 13 (índice 12) si existe, o la agregamos
+    // Pero como es difícil saber el índice exacto sin leer headers, asumimos que es la última o la buscamos
+    
+    var headers = data[0];
+    var pushTokenIndex = headers.indexOf('push_token');
+    
+    if (pushTokenIndex === -1) {
+      // Si no existe la columna, la creamos
+      pushTokenIndex = headers.length;
+      usuariosSheet.getRange(1, pushTokenIndex + 1).setValue('push_token');
+    }
+    
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][0]) === String(user.pk_usuario)) {
+        usuariosSheet.getRange(i + 1, pushTokenIndex + 1).setValue(params.pushToken);
+        found = true;
+        break;
+      }
+    }
+    
+    return { ok: found };
+    
+  } catch (e) {
+    Logger.log('Error en updatePushToken: ' + e.toString());
+    return { ok: false, msg: e.toString() };
+  }
+}
+
+/**
+ * Envía notificaciones push usando Expo API
+ * @param {string[]} tokens - Array de tokens de Expo
+ * @param {string} title - Título
+ * @param {string} body - Cuerpo
+ * @param {object} data - Datos adicionales (opcional)
+ */
+function sendPushNotification(tokens, title, body, data) {
+  try {
+    if (!tokens || tokens.length === 0) return;
+    
+    // Filtrar tokens válidos
+    var validTokens = tokens.filter(function(t) {
+      return t && t.startsWith('ExponentPushToken');
+    });
+    
+    if (validTokens.length === 0) return;
+    
+    var messages = validTokens.map(function(token) {
+      return {
+        to: token,
+        title: title,
+        body: body,
+        data: data || {},
+        sound: 'default'
+      };
+    });
+    
+    // Expo permite enviar en lotes de hasta 100
+    // Para simplificar, enviamos todo junto (asumiendo < 100 por ahora)
+    
+    var payload = JSON.stringify(messages);
+    
+    var options = {
+      method: 'post',
+      contentType: 'application/json',
+      payload: payload
+    };
+    
+    UrlFetchApp.fetch('https://exp.host/--/api/v2/push/send', options);
+    
+  } catch (e) {
+    Logger.log('Error enviando push notification: ' + e.toString());
+  }
+}
+
+/**
+ * Obtiene la cantidad de notificaciones no leídas
+ * @param {string} dni - DNI del usuario
+ */
+function getUnreadCount(dni) {
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var notificacionesSheet = ss.getSheetByName('Notificaciones');
+    
+    if (!notificacionesSheet) return { ok: true, count: 0 };
+    
+    var data = notificacionesSheet.getDataRange().getValues();
+    var count = 0;
+    
+    // B=fk_usuario, F=leido, H=activo
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      if (String(row[1]) === String(dni) && row[5] === false && row[7] === true) {
+        count++;
+      }
+    }
+    
+    return { ok: true, count: count };
+    
+  } catch (e) {
+    Logger.log('Error en getUnreadCount: ' + e.toString());
+    return { ok: false, msg: e.toString() };
+  }
 }

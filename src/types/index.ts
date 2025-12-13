@@ -1,5 +1,6 @@
 export interface User {
     pk_usuario: string;
+    dni: string; // Alias for pk_usuario for frontend consistency
     nombre: string;
     apellido: string;
     email: string;

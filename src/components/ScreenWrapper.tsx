@@ -13,6 +13,9 @@ interface ScreenWrapperProps {
     backgroundColor?: string;
 }
 
+import { useRoute } from '@react-navigation/native';
+import { api } from '../services/api';
+
 export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
     children,
     style,
@@ -21,6 +24,26 @@ export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
     keyboardAvoiding = true,
     backgroundColor = colors.bg,
 }) => {
+    const route = useRoute();
+    const params = (route.params as any) || {};
+
+    React.useEffect(() => {
+        // Log screen view
+        const logView = async () => {
+            try {
+                await api.logActivity({
+                    token: params.token,
+                    pantalla: route.name,
+                    accion: 'VIEW',
+                    detalles: { params: JSON.stringify(params) }
+                });
+            } catch (e) {
+                console.error('Error logging view:', e);
+            }
+        };
+        logView();
+    }, [route.name]);
+
     const Wrapper = keyboardAvoiding ? KeyboardAvoidingView : View;
     const wrapperProps = keyboardAvoiding
         ? {

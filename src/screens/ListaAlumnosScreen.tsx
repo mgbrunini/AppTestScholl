@@ -8,21 +8,21 @@ import { api } from '../services/api';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function ListaAlumnosScreen({ route, navigation }: { route: any, navigation: any }) {
-    const { token, curso, materia, collegeId } = route.params || {};
+    const { token, curso, materia, collegeId, materiaId, year } = route.params || {};
     const [alumnos, setAlumnos] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [modo, setModo] = useState('Cursa'); // Cursa, Periodo, Intensifica, Previa
+    const [modo, setModo] = useState('TODOS'); // TODOS, CURSA, RECURSA, INTENSIFICA
     const [showModeSelector, setShowModeSelector] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         loadAlumnos();
-    }, [modo]);
+    }, []);
 
     const loadAlumnos = async () => {
         setLoading(true);
         try {
-            const response = await api.getAlumnosMateria(curso, materia, collegeId);
+            const response = await api.getAlumnosMateria(curso, materia, collegeId, year);
 
             if (response.ok) {
                 setAlumnos(response.alumnos || []);
@@ -37,20 +37,17 @@ export default function ListaAlumnosScreen({ route, navigation }: { route: any, 
         }
     };
 
-    const handleCalificar = (alumno: any) => {
-        navigation.navigate('Calificar', {
-            token,
-            alumno,
-            materia,
-            curso,
-            periodo: '1º Cuatrimestre'
-        });
-    };
+    const filteredAlumnos = alumnos.filter(a => {
+        const matchesSearch = a.apellido.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            a.nombre.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const filteredAlumnos = alumnos.filter(a =>
-        a.apellido.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.nombre.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+        if (!matchesSearch) return false;
+
+        if (modo === 'TODOS') return true;
+
+        // Comparar condición (asegurando mayúsculas)
+        return a.condicion && a.condicion.toUpperCase() === modo;
+    });
 
     const renderItem = ({ item }: { item: any }) => (
         <View style={styles.studentRow}>
@@ -63,22 +60,27 @@ export default function ListaAlumnosScreen({ route, navigation }: { route: any, 
             <View style={styles.studentInfo}>
                 <Text style={styles.studentName}>{item.apellido}, {item.nombre}</Text>
                 <Text style={styles.studentDni}>DNI: {item.dni}</Text>
+                {item.condicion && (
+                    <Text style={[styles.studentDni, { color: colors.primary, fontSize: 10 }]}>
+                        {item.condicion}
+                    </Text>
+                )}
             </View>
 
             <View style={styles.actionsContainer}>
-                {item.promedio ? (
-                    <View style={styles.gradeContainer}>
-                        <Text style={styles.gradeLabel}>Promedio</Text>
-                        <Text style={styles.gradeValue}>{item.promedio}</Text>
-                    </View>
-                ) : (
-                    <TouchableOpacity
-                        style={styles.gradeBtn}
-                        onPress={() => handleCalificar(item)}
-                    >
-                        <Ionicons name="add" size={20} color={colors.primary} />
-                    </TouchableOpacity>
-                )}
+                <TouchableOpacity
+                    style={styles.actionBtn}
+                    onPress={() => navigation.navigate('StudentGrades', {
+                        studentId: item.id || item.dni,
+                        studentName: `${item.apellido}, ${item.nombre}`,
+                        materiaId: materiaId,
+                        materiaName: materia,
+                        token,
+                        year: year || new Date().getFullYear()
+                    })}
+                >
+                    <Ionicons name="school-outline" size={22} color={colors.primary} />
+                </TouchableOpacity>
             </View>
         </View>
     );
@@ -96,8 +98,8 @@ export default function ListaAlumnosScreen({ route, navigation }: { route: any, 
                 onPress={() => setShowModeSelector(false)}
             >
                 <View style={styles.modalContent}>
-                    <Text style={styles.modalTitle}>Filtrar por Estado</Text>
-                    {['Cursa', 'Periodo', 'Intensifica', 'Previa'].map((m) => (
+                    <Text style={styles.modalTitle}>Filtrar por Condición</Text>
+                    {['TODOS', 'CURSA', 'RECURSA', 'INTENSIFICA'].map((m) => (
                         <TouchableOpacity
                             key={m}
                             style={[styles.modeOption, modo === m && styles.modeOptionSelected]}
@@ -283,6 +285,16 @@ const styles = StyleSheet.create({
     },
     actionsContainer: {
         marginLeft: spacing.md,
+    },
+    actionBtn: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: colors.bgCard,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: colors.primaryLight,
     },
     gradeContainer: {
         alignItems: 'center',
